@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  /* Surfaces */
+  --background: #0d0d0d;
+  --surface: #141414;
+  --elevated: #1a1a1a;
+
+  /* Text */
+  --foreground: #ededed;
+  --muted-foreground: #888888;
+
+  /* Accent */
+  --accent: #FF6B1A;
+  --accent-foreground: #ffffff;
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+
+  /* shadcn semantic tokens */
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--elevated);
+  --popover-foreground: var(--foreground);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--surface);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--elevated);
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --input: var(--elevated);
+  --ring: var(--accent);
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-muted-foreground: var(--muted-foreground);
+  --font-sans: var(--font-jetbrains-mono);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jetbrains-mono), monospace;
+}
