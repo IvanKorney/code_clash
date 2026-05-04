@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
+import { ThemeProvider } from "next-themes";
+import { Navbar } from "@/components/navbar/Navbar";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -21,8 +23,18 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${jetbrainsMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          disableTransitionOnChange
+        >
+          <Navbar />
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
