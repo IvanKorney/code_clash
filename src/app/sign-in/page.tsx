@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { useMutation } from "@tanstack/react-query";
 import { GitBranch } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,20 +11,16 @@ import { useState } from "react";
 
 const SignInPage = () => {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ email: "", password: "" });
+  const { email, password } = form;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    const { error } = await authClient.signIn.email({ email, password, callbackURL: "/" });
-    if (error) setError(error.message ?? "Sign in failed");
-    else router.push("/");
-    setLoading(false);
-  };
+  const { mutate: signIn, isPending, error } = useMutation({
+    mutationFn: async () => {
+      const { error } = await authClient.signIn.email({ email, password, callbackURL: "/" });
+      if (error) throw new Error(error.message ?? "Sign in failed");
+    },
+    onSuccess: () => router.push("/"),
+  });
 
   const handleSocial = (provider: "github" | "google") =>
     authClient.signIn.social({ provider, callbackURL: "/" });
@@ -37,20 +34,12 @@ const SignInPage = () => {
         </div>
 
         <div className="space-y-2">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => handleSocial("github")}
-          >
-            <GitBranch className="h-4 w-4" />
+          <Button variant="outline" className="w-full" onClick={() => handleSocial("github")}>
+            <GitBranch className="size-4" />
             Continue with GitHub
           </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => handleSocial("google")}
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24">
+          <Button variant="outline" className="w-full" onClick={() => handleSocial("google")}>
+            <svg className="size-4" viewBox="0 0 24 24">
               <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
               <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -69,24 +58,24 @@ const SignInPage = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); signIn(); }} className="space-y-3">
           <Input
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
             required
           />
           <Input
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
             required
           />
-          {error && <p className="text-xs text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
+          {error && <p className="text-xs text-destructive">{error.message}</p>}
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "Signing in…" : "Sign in"}
           </Button>
         </form>
 

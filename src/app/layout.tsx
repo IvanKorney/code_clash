@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
-import { ThemeProvider } from "next-themes";
+import { Providers } from "@/components/Providers";
 import { Navbar } from "@/components/navbar/Navbar";
 import "./globals.css";
 
@@ -26,14 +26,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          disableTransitionOnChange
-        >
+        <Providers>
           <Navbar />
           {children}
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
