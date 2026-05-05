@@ -1,0 +1,19 @@
+export type EloTier = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond" | "Master";
+
+export function getEloTier(elo: number): EloTier {
+  if (elo >= 1800) return "Master";
+  if (elo >= 1600) return "Diamond";
+  if (elo >= 1400) return "Platinum";
+  if (elo >= 1200) return "Gold";
+  if (elo >= 1000) return "Silver";
+  return "Bronze";
+}
+
+export const ELO_TIER_COLORS: Record<EloTier, string> = {
+  Bronze: "text-amber-700 bg-amber-700/10 border-amber-700/30",
+  Silver: "text-slate-400 bg-slate-400/10 border-slate-400/30",
+  Gold: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
+  Platinum: "text-cyan-400 bg-cyan-400/10 border-cyan-400/30",
+  Diamond: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+  Master: "text-purple-400 bg-purple-400/10 border-purple-400/30",
+};

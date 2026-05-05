@@ -1,7 +1,7 @@
 import { betterFetch } from "@better-fetch/fetch";
 import type { auth } from "@/lib/auth";
 import { NextResponse, type NextRequest } from "next/server";
-import { PROTECTED_ROUTE_MATCHERS, PROTECTED_ROUTES } from "./lib/consts";
+import { PROTECTED_ROUTES } from "./lib/consts";
 
 type Session = typeof auth.$Infer.Session;
 
@@ -28,5 +28,10 @@ export const middleware = async (request: NextRequest) => {
 };
 
 export const config = {
-  matcher: PROTECTED_ROUTE_MATCHERS,
+  matcher: [
+    "/room/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/leaderboard/:path*",
+  ],
 };

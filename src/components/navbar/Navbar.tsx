@@ -1,0 +1,31 @@
+import { Row } from "../layout/Row";
+import { ThemeToggle } from "./ThemeToggle";
+import { UserMenu } from "./UserMenu";
+import Image from "next/image";
+import Link from "next/link";
+
+export const Navbar = () => {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-(--surface)/80 backdrop-blur-sm">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+        <Row className="items-center gap-4">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image
+              src="/assets/logo.png"
+              alt="Code Clash"
+              width={28}
+              height={28}
+              className="rounded-sm"
+            />
+            <span className="font-bold text-foreground tracking-tight">
+              Code Clash
+            </span>
+          </Link>
+          <ThemeToggle />
+        </Row>
+
+        <UserMenu />
+      </div>
+    </header>
+  );
+};
