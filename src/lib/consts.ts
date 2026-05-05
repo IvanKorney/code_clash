@@ -5,4 +5,5 @@ export const PROTECTED_ROUTES = [
   "/leaderboard",
 ];
 
-export const DIFFICULTIES = ["EASY", "MEDIUM", "HARD"];
+export type Difficulty = "easy" | "medium" | "hard";
+export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];

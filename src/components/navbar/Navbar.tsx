@@ -7,7 +7,7 @@ import Link from "next/link";
 export const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-(--surface)/80 backdrop-blur-sm">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+      <Row className="mx-auto h-14 max-w-7xl items-center justify-between px-4">
         <Row className="items-center gap-4">
           <Link href="/" className="flex items-center gap-2.5">
             <Image
@@ -25,7 +25,7 @@ export const Navbar = () => {
         </Row>
 
         <UserMenu />
-      </div>
+      </Row>
     </header>
   );
 };

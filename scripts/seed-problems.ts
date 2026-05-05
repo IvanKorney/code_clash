@@ -3,13 +3,14 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import axios from "axios";
 import { problems } from "../src/db/schema";
 import { DIFFICULTIES } from "../src/lib/consts";
-import type { Difficulty, TestCase } from "../src/types/problem";
+import type { TestCase } from "../src/types/problem";
+import type { Difficulty } from "../src/lib/consts";
 
 const API_BASE = "https://alfa-leetcode-api.onrender.com";
 const LIMIT_BY_DIFFICULTY: Record<Difficulty, number> = {
-  EASY: 120,
-  MEDIUM: 120,
-  HARD: 120,
+  easy: 120,
+  medium: 120,
+  hard: 120,
 };
 
 const PRE_BLOCK_REGEX = /<pre>([\s\S]*?)<\/pre>/gi;
@@ -36,7 +37,6 @@ interface TopicTag {
 
 interface ProblemDetailResponse {
   questionTitle?: string;
-  title?: string;
   titleSlug: string;
   question: string;
   topicTags?: TopicTag[];
@@ -78,16 +78,14 @@ const seed = async () => {
   });
   const db = drizzle(client);
 
-  for (const difficultyLabel of DIFFICULTIES) {
-    const difficulty = difficultyLabel as Difficulty;
-    const dbDifficulty = difficulty.toLowerCase() as Lowercase<Difficulty>;
+  for (const difficulty of DIFFICULTIES) {
     console.log(`\nFetching ${difficulty} problems...`);
 
     const listData = (
       await axios.get<ProblemListResponse>(`${API_BASE}/problems`, {
         params: {
           limit: LIMIT_BY_DIFFICULTY[difficulty],
-          difficulty: difficultyLabel,
+          difficulty: difficulty.toUpperCase(),
         },
       })
     ).data;
@@ -124,9 +122,9 @@ const seed = async () => {
           id: crypto.randomUUID(),
           title,
           slug: detail.titleSlug,
-          difficulty: dbDifficulty,
+          difficulty,
           acceptanceRate: p.acRate,
-          description: description,
+          description,
           examples: testCases.slice(0, 2),
           constraints: parseConstraints(description),
           tags: detail.topicTags?.map((t) => t.slug) ?? [],

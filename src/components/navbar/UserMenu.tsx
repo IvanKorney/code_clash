@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth-client";
+import { Column } from "@/components/layout/Column";
 import { ELO_TIER_COLORS, getEloTier } from "@/lib/elo";
 import {
   ChevronDown,
@@ -86,12 +87,12 @@ export const UserMenu = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col gap-0.5">
+          <Column className="gap-0.5">
             <span className="font-medium text-foreground">
               {user.username ?? user.name}
             </span>
             <span className="text-xs text-muted-foreground">{elo} ELO</span>
-          </div>
+          </Column>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
