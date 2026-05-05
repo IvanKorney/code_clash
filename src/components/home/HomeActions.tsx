@@ -66,7 +66,7 @@ export const HomeActions = () => {
       </Row>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Create Room</DialogTitle>
           </DialogHeader>
@@ -120,7 +120,7 @@ export const HomeActions = () => {
       </Dialog>
 
       <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Join Room</DialogTitle>
           </DialogHeader>
