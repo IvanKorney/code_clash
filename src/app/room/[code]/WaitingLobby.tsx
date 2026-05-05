@@ -13,8 +13,25 @@ import { Check, Copy, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type Player = { userId: string; name: string; image: string | null; elo: number };
-type RoomData = { status: string; hostId: string; players: Player[] };
+interface Player {
+  userId: string;
+  name: string;
+  image: string | null;
+  elo: number;
+}
+
+interface RoomData {
+  status: string;
+  hostId: string;
+  players: Player[];
+}
+
+interface WaitingLobbyProps {
+  code: string;
+  roomId: string;
+  difficulty: Difficulty;
+  currentUserId: string;
+}
 
 const DIFFICULTY_STYLES: Record<Difficulty, string> = {
   easy: "text-green-400 border-green-400/30 bg-green-400/10",
@@ -27,12 +44,7 @@ export const WaitingLobby = ({
   roomId,
   difficulty,
   currentUserId,
-}: {
-  code: string;
-  roomId: string;
-  difficulty: Difficulty;
-  currentUserId: string;
-}) => {
+}: WaitingLobbyProps) => {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 

@@ -1,12 +1,14 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db/db";
-import { rooms } from "@/db/schema";
+import { rooms, problems, roomPlayers, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { addPlayerToRoom } from "@/app/actions/rooms";
 import { WaitingLobby } from "./WaitingLobby";
+import { MatchView } from "./MatchView";
 import { Column } from "@/components/layout/Column";
+import type { TestCase } from "@/types/problem";
 
 const RoomPage = async ({ params }: { params: Promise<{ code: string }> }) => {
   const { code } = await params;
@@ -45,12 +47,50 @@ const RoomPage = async ({ params }: { params: Promise<{ code: string }> }) => {
     );
   }
 
+  // Re-fetch room — addPlayerToRoom may have just set problemSlug on this render
+  const freshRoom = await db.query.rooms.findFirst({
+    where: eq(rooms.id, room.id),
+  });
+  if (!freshRoom?.problemSlug) notFound();
+
+  const [problem, playerList] = await Promise.all([
+    db.query.problems.findFirst({
+      where: eq(problems.slug, freshRoom.problemSlug),
+    }),
+    db
+      .select({
+        userId: roomPlayers.userId,
+        name: user.name,
+        image: user.image,
+        elo: user.elo,
+      })
+      .from(roomPlayers)
+      .innerJoin(user, eq(roomPlayers.userId, user.id))
+      .where(eq(roomPlayers.roomId, room.id)),
+  ]);
+
+  if (!problem) notFound();
+
+  const opponent = playerList.find((p) => p.userId !== session.user.id) ?? null;
+
   return (
-    <main className="flex flex-1 items-center justify-center">
-      <p className="text-muted-foreground">
-        Match starting — coming in step 8!
-      </p>
-    </main>
+    <MatchView
+      code={code.toUpperCase()}
+      currentUserId={session.user.id}
+      matchStartedAt={freshRoom.matchStartedAt!.getTime()}
+      roomId={room.id}
+      timeLimitMinutes={room.timeLimitMinutes}
+      problem={{
+        title: problem.title,
+        slug: problem.slug,
+        difficulty: problem.difficulty,
+        description: problem.description,
+        examples: (problem.examples as TestCase[]).slice(0, 2),
+        constraints: problem.constraints,
+        hints: (problem.hints as string[]) ?? [],
+      }}
+      opponent={opponent}
+    />
   );
 };
 

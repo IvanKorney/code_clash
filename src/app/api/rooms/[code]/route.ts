@@ -21,6 +21,8 @@ export const GET = async (
       name: user.name,
       image: user.image,
       elo: user.elo,
+      testCasesPassed: roomPlayers.testCasesPassed,
+      totalTestCases: roomPlayers.totalTestCases,
     })
     .from(roomPlayers)
     .innerJoin(user, eq(roomPlayers.userId, user.id))
