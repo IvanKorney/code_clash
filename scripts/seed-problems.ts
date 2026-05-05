@@ -2,6 +2,7 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import axios from "axios";
 import { problems } from "../src/db/schema";
+import { DIFFICULTIES } from "../src/lib/consts";
 import type { Difficulty, TestCase } from "../src/types/problem";
 
 const API_BASE = "https://alfa-leetcode-api.onrender.com";
@@ -77,66 +78,69 @@ const seed = async () => {
   });
   const db = drizzle(client);
 
-  const difficulty = "MEDIUM" as Difficulty;
-  const dbDifficulty = difficulty.toLowerCase() as Lowercase<Difficulty>;
-  console.log(`\nFetching ${difficulty} problems...`);
+  for (const difficultyLabel of DIFFICULTIES) {
+    const difficulty = difficultyLabel as Difficulty;
+    const dbDifficulty = difficulty.toLowerCase() as Lowercase<Difficulty>;
+    console.log(`\nFetching ${difficulty} problems...`);
 
-  const listData = (
-    await axios.get<ProblemListResponse>(`${API_BASE}/problems`, {
-      params: {
-        limit: LIMIT_BY_DIFFICULTY[difficulty],
-        difficulty: difficulty,
-      },
-    })
-  ).data;
-  const problemList = (listData.problemsetQuestionList ?? []).filter(
-    (p) => !p.isPaidOnly,
-  );
-
-  console.log(`Found ${problemList.length} free problems`);
-
-  for (const p of problemList) {
-    const detail = (
-      await axios.get<ProblemDetailResponse>(`${API_BASE}/select`, {
-        params: { titleSlug: p.titleSlug },
+    const listData = (
+      await axios.get<ProblemListResponse>(`${API_BASE}/problems`, {
+        params: {
+          limit: LIMIT_BY_DIFFICULTY[difficulty],
+          difficulty: difficultyLabel,
+        },
       })
     ).data;
+    const problemList = (listData.problemsetQuestionList ?? []).filter(
+      (p) => !p.isPaidOnly,
+    );
 
-    const title = detail.questionTitle;
-    const description = detail.question;
+    console.log(`Found ${problemList.length} free problems`);
 
-    if (!title || !description) {
-      console.log(` ⚠ Skipping ${p.titleSlug}`);
-      continue;
+    for (const p of problemList) {
+      const detail = (
+        await axios.get<ProblemDetailResponse>(`${API_BASE}/select`, {
+          params: { titleSlug: p.titleSlug },
+        })
+      ).data;
+
+      const title = detail.questionTitle;
+      const description = detail.question;
+
+      if (!title || !description) {
+        console.log(` ⚠ Skipping ${p.titleSlug}`);
+        continue;
+      }
+
+      const testCases = parseTestCases(description);
+      if (testCases.length === 0) {
+        console.log(` ⚠ Skipping ${p.titleSlug} (no parseable test cases)`);
+        continue;
+      }
+
+      await db
+        .insert(problems)
+        .values({
+          id: crypto.randomUUID(),
+          title,
+          slug: detail.titleSlug,
+          difficulty: dbDifficulty,
+          acceptanceRate: p.acRate,
+          description: description,
+          examples: testCases.slice(0, 2),
+          constraints: parseConstraints(description),
+          tags: detail.topicTags?.map((t) => t.slug) ?? [],
+          topicTags:
+            detail.topicTags?.map((t) => ({ name: t.name, slug: t.slug })) ??
+            [],
+          hints: detail.hints ?? [],
+          testCases,
+          isActive: true,
+        })
+        .onConflictDoNothing();
+
+      console.log(`  ✓ ${title} (${testCases.length} test cases)`);
     }
-
-    const testCases = parseTestCases(description);
-    if (testCases.length === 0) {
-      console.log(` ⚠ Skipping ${p.titleSlug} (no parseable test cases)`);
-      continue;
-    }
-
-    await db
-      .insert(problems)
-      .values({
-        id: crypto.randomUUID(),
-        title,
-        slug: detail.titleSlug,
-        difficulty: dbDifficulty,
-        acceptanceRate: p.acRate,
-        description: description,
-        examples: testCases.slice(0, 2),
-        constraints: parseConstraints(description),
-        tags: detail.topicTags?.map((t) => t.slug) ?? [],
-        topicTags:
-          detail.topicTags?.map((t) => ({ name: t.name, slug: t.slug })) ?? [],
-        hints: detail.hints ?? [],
-        testCases,
-        isActive: true,
-      })
-      .onConflictDoNothing();
-
-    console.log(`  ✓ ${title} (${testCases.length} test cases)`);
   }
 
   await client.end();
