@@ -15,6 +15,20 @@
       "when": 1777903634693,
       "tag": "0001_magical_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777910975793,
+      "tag": "0002_lonely_turbo",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777913441704,
+      "tag": "0003_friendly_silver_samurai",
+      "breakpoints": true
     }
   ]
 }
