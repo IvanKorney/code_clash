@@ -6,6 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import { useMutation } from "@tanstack/react-query";
 import { GitBranch } from "lucide-react";
 import Link from "next/link";
+import { Row } from "@/components/layout/Row";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -50,12 +51,12 @@ const SignInPage = () => {
         </div>
 
         <div className="relative">
-          <div className="absolute inset-0 flex items-center">
+          <Row className="absolute inset-0 items-center">
             <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs">
+          </Row>
+          <Row className="relative justify-center text-xs">
             <span className="bg-background px-2 text-muted-foreground">or</span>
-          </div>
+          </Row>
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); signIn(); }} className="space-y-3">
