@@ -8,7 +8,7 @@ import { Row } from "@/components/layout/Row";
 import { Column } from "@/components/layout/Column";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const useTimer = (matchStartedAtMs: number, timeLimitMinutes: number) => {
@@ -33,6 +33,7 @@ interface Player {
   image: string | null;
   testCasesPassed: number;
   totalTestCases: number;
+  hasPassed: boolean;
 }
 
 interface MatchHeaderProps {
@@ -41,6 +42,7 @@ interface MatchHeaderProps {
   currentUserId: string;
   matchStartedAtMs: number;
   timeLimitMinutes: number;
+  onOpponentFinished: () => void;
 }
 
 export const MatchHeader = ({
@@ -49,8 +51,10 @@ export const MatchHeader = ({
   currentUserId,
   matchStartedAtMs,
   timeLimitMinutes,
+  onOpponentFinished,
 }: MatchHeaderProps) => {
   const { timeLeft, display } = useTimer(matchStartedAtMs, timeLimitMinutes);
+  const firedRef = useRef(false);
 
   const { mutate: handleGiveUp, isPending: givingUp } = useMutation({
     mutationFn: async () => forfeitMatch(roomId),
@@ -68,6 +72,14 @@ export const MatchHeader = ({
   const opponent = (data?.players as Player[] | undefined)?.find(
     (p) => p.userId !== currentUserId,
   );
+  const problemTotal = data?.totalTestCases ?? 0;
+
+  useEffect(() => {
+    if (opponent?.hasPassed && !firedRef.current) {
+      firedRef.current = true;
+      onOpponentFinished();
+    }
+  }, [opponent?.hasPassed, onOpponentFinished]);
 
   const timerColor =
     timeLeft < 60
@@ -101,7 +113,7 @@ export const MatchHeader = ({
           <Column className="items-end gap-0.5">
             <span className="text-xs font-medium">{opponent.name}</span>
             <span className="text-xs text-muted-foreground">
-              {opponent.testCasesPassed}/{opponent.totalTestCases} cases
+              {opponent.testCasesPassed}/{problemTotal} cases
             </span>
           </Column>
           <Avatar className="size-6">
@@ -110,8 +122,8 @@ export const MatchHeader = ({
           </Avatar>
           <Progress
             value={
-              opponent.totalTestCases > 0
-                ? (opponent.testCasesPassed / opponent.totalTestCases) * 100
+              problemTotal > 0
+                ? (opponent.testCasesPassed / problemTotal) * 100
                 : 0
             }
             className="w-16 h-1.5"

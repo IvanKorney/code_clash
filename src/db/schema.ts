@@ -107,6 +107,8 @@ export const problems = pgTable("problems", {
   topicTags: json("topic_tags").$type<{ name: string; slug: string }[]>(),
   hints: json("hints").$type<string[]>(),
   testCases: json("test_cases").notNull(),
+  codeSnippets: json("code_snippets").$type<{ langSlug: string; code: string }[]>(),
+  metaData: json("meta_data").$type<{ name: string; params: { name: string; type: string }[]; return: { type: string }; manual?: boolean }>(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -1,0 +1,1 @@
+ALTER TABLE "problems" ADD COLUMN "meta_data" json;
