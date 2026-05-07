@@ -80,7 +80,15 @@ export const MatchView = ({
   problem,
 }: MatchViewProps) => {
   const router = useRouter();
-  const [language, setLanguage] = useState<Language>("javascript");
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") return "javascript";
+    return (localStorage.getItem("cc:lang") as Language) ?? "javascript";
+  });
+
+  const handleLanguageChange = (lang: Language) => {
+    localStorage.setItem("cc:lang", lang);
+    setLanguage(lang);
+  };
   const {
     output,
     matchResult,
@@ -140,8 +148,9 @@ export const MatchView = ({
           <PanelGroup orientation="vertical" className="h-full">
             <Panel defaultSize={70} minSize={30}>
               <EditorPanel
+                roomId={roomId}
                 language={language}
-                onLanguageChange={setLanguage}
+                onLanguageChange={handleLanguageChange}
                 onRun={(userCode, lang) => run({ userCode, lang })}
                 onSubmit={(userCode, lang) => submit({ userCode, lang })}
                 isRunning={isRunning}

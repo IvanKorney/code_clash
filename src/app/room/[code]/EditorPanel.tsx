@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Column } from "@/components/layout/Column";
 import { Row } from "@/components/layout/Row";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import type { OnMount } from "@monaco-editor/react";
 import type { Language } from "@/types/problem";
+import { useLocalCode } from "@/hooks/useLocalCode";
 import { useTheme } from "next-themes";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
@@ -37,6 +38,7 @@ const STARTER_CODE: Record<Language, string> = {
 };
 
 interface EditorPanelProps {
+  roomId: string;
   language: Language;
   onLanguageChange: (lang: Language) => void;
   onRun: (code: string, language: Language) => void;
@@ -47,6 +49,7 @@ interface EditorPanelProps {
 }
 
 export const EditorPanel = ({
+  roomId,
   language,
   onLanguageChange,
   onRun,
@@ -57,17 +60,14 @@ export const EditorPanel = ({
 }: EditorPanelProps) => {
   const { theme } = useTheme();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
-  const [codeByLang, setCodeByLang] = useState<Record<Language, string>>({
-    ...STARTER_CODE,
-    ...codeSnippets,
-  });
+  const { codeByLang, updateCode } = useLocalCode(roomId, { ...STARTER_CODE, ...codeSnippets });
 
   const handleMount: OnMount = (editor) => {
     editorRef.current = editor;
   };
 
   const handleChange = (value: string | undefined) => {
-    setCodeByLang((prev) => ({ ...prev, [language]: value ?? "" }));
+    updateCode(language, value ?? "");
   };
 
   const getCode = () => editorRef.current?.getValue() ?? codeByLang[language];

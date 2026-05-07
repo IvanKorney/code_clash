@@ -16,7 +16,10 @@ interface ProblemPanelProps {
 }
 
 const sanitize = (html: string) =>
-  html.replace(/<script\b[\s\S]*?<\/script>/gi, "").replace(/<style\b[\s\S]*?<\/style>/gi, "");
+  html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<script\b[^>]*\/>/gi, "")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
 
 export const ProblemPanel = ({ title, difficulty, description }: ProblemPanelProps) => (
   <Column className="h-full overflow-hidden border-r border-border">
