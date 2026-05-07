@@ -15,7 +15,33 @@ import { Button } from "@/components/ui/button";
 import { Column } from "@/components/layout/Column";
 import { useMatch } from "@/hooks/useMatch";
 import type { Difficulty } from "@/lib/consts";
-import type { Language, TestCase } from "@/types/problem";
+import type { Language, MatchResult, TestCase } from "@/types/problem";
+
+const MATCH_RESULT_COPY: Record<
+  MatchResult,
+  { emoji: string; title: string; subtitle: string }
+> = {
+  won: {
+    emoji: "🏆",
+    title: "You solved it!",
+    subtitle: "All test cases passed. Well done!",
+  },
+  lost: {
+    emoji: "😔",
+    title: "Opponent solved it first",
+    subtitle: "Better luck next time.",
+  },
+  forfeit: {
+    emoji: "😔",
+    title: "You gave up",
+    subtitle: "Better luck next time.",
+  },
+  walkover: {
+    emoji: "🏆",
+    title: "Opponent forfeited",
+    subtitle: "Your opponent threw in the towel.",
+  },
+};
 
 interface Problem {
   title: string;
@@ -55,23 +81,37 @@ export const MatchView = ({
 }: MatchViewProps) => {
   const router = useRouter();
   const [language, setLanguage] = useState<Language>("javascript");
-  const { output, matchResult, run, submit, isRunning, isSubmitting, handleOpponentFinished } =
-    useMatch({ roomId, problemSlug: problem.slug, firstExample: problem.examples[0] });
+  const {
+    output,
+    matchResult,
+    setMatchResult,
+    run,
+    submit,
+    isRunning,
+    isSubmitting,
+    handleOpponentFinished,
+  } = useMatch({
+    roomId,
+    problemSlug: problem.slug,
+    firstExample: problem.examples[0],
+  });
 
   return (
     <Column className="relative h-[calc(100vh-3.5rem)]">
       {matchResult && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <Column className="items-center gap-4">
-            <span className="text-5xl">{matchResult === "won" ? "🏆" : "😔"}</span>
-            <h2 className="text-2xl font-bold">
-              {matchResult === "won" ? "You solved it!" : "Opponent solved it first"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {matchResult === "won"
-                ? "All test cases passed. Well done!"
-                : "Better luck next time."}
-            </p>
+            {(() => {
+              const { emoji, title, subtitle } =
+                MATCH_RESULT_COPY[matchResult!];
+              return (
+                <>
+                  <span className="text-5xl">{emoji}</span>
+                  <h2 className="text-2xl font-bold">{title}</h2>
+                  <p className="text-sm text-muted-foreground">{subtitle}</p>
+                </>
+              );
+            })()}
             <Button onClick={() => router.push("/")}>Back to Home</Button>
           </Column>
         </div>
@@ -84,6 +124,8 @@ export const MatchView = ({
         roomId={roomId}
         timeLimitMinutes={timeLimitMinutes}
         onOpponentFinished={handleOpponentFinished}
+        onForfeit={() => setMatchResult("forfeit")}
+        onOpponentForfeited={() => setMatchResult("walkover")}
       />
       <PanelGroup orientation="horizontal" className="flex-1 min-h-0">
         <Panel defaultSize={40} minSize={25}>

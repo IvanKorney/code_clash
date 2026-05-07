@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
-import type { Language, PanelOutput, SubmitOutput, TestCase } from "@/types/problem";
+import type { Language, MatchResult, PanelOutput, SubmitOutput, TestCase } from "@/types/problem";
 
 interface UseMatchProps {
   roomId: string;
@@ -13,7 +13,7 @@ interface UseMatchProps {
 
 export const useMatch = ({ roomId, problemSlug, firstExample }: UseMatchProps) => {
   const [output, setOutput] = useState<PanelOutput | null>(null);
-  const [matchResult, setMatchResult] = useState<"won" | "lost" | null>(null);
+  const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
   const { mutate: run, isPending: isRunning } = useMutation({
     mutationFn: async ({ userCode, lang }: { userCode: string; lang: Language }) => {
@@ -61,5 +61,5 @@ export const useMatch = ({ roomId, problemSlug, firstExample }: UseMatchProps) =
     }
   }, [matchResult]);
 
-  return { output, matchResult, run, submit, isRunning, isSubmitting, handleOpponentFinished };
+  return { output, matchResult, setMatchResult, run, submit, isRunning, isSubmitting, handleOpponentFinished };
 };
