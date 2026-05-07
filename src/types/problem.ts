@@ -5,6 +5,8 @@ export interface TestCase {
 
 export type Language = "javascript" | "typescript" | "python" | "java" | "cpp";
 
+export type MatchResult = "won" | "lost" | "forfeit" | "opponent-forfeit";
+
 export type RunOutput = {
   type: "run";
   input: string;

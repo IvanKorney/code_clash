@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Row } from "@/components/layout/Row";
 import { Column } from "@/components/layout/Column";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useRoomPlayers } from "@/hooks/useRoomPlayers";
 import { cn } from "@/lib/utils";
 
 const useTimer = (matchStartedAtMs: number, timeLimitMinutes: number) => {
@@ -27,15 +27,6 @@ const useTimer = (matchStartedAtMs: number, timeLimitMinutes: number) => {
   return { timeLeft, display: `${m}:${s.toString().padStart(2, "0")}` };
 };
 
-interface Player {
-  userId: string;
-  name: string;
-  image: string | null;
-  testCasesPassed: number;
-  totalTestCases: number;
-  hasPassed: boolean;
-}
-
 interface MatchHeaderProps {
   code: string;
   roomId: string;
@@ -43,6 +34,8 @@ interface MatchHeaderProps {
   matchStartedAtMs: number;
   timeLimitMinutes: number;
   onOpponentFinished: () => void;
+  onForfeit: () => void;
+  onOpponentForfeited: () => void;
 }
 
 export const MatchHeader = ({
@@ -52,34 +45,34 @@ export const MatchHeader = ({
   matchStartedAtMs,
   timeLimitMinutes,
   onOpponentFinished,
+  onForfeit,
+  onOpponentForfeited,
 }: MatchHeaderProps) => {
   const { timeLeft, display } = useTimer(matchStartedAtMs, timeLimitMinutes);
-  const firedRef = useRef(false);
+  const opponentFinishedRef = useRef(false);
+  const wonRef = useRef(false);
 
   const { mutate: handleGiveUp, isPending: givingUp } = useMutation({
     mutationFn: async () => forfeitMatch(roomId),
+    onSuccess: () => onForfeit(),
   });
 
-  const { data } = useQuery({
-    queryKey: ["room-progress", code],
-    queryFn: async () => {
-      const { data } = await axios.get(`/api/rooms/${code}`);
-      return data;
-    },
-    refetchInterval: 3000,
-  });
-
-  const opponent = (data?.players as Player[] | undefined)?.find(
-    (p) => p.userId !== currentUserId,
-  );
-  const problemTotal = data?.totalTestCases ?? 0;
+  const { players, problemTotal, opponentForfeited } = useRoomPlayers(code, roomId);
+  const opponent = players.find((p) => p.userId !== currentUserId);
 
   useEffect(() => {
-    if (opponent?.hasPassed && !firedRef.current) {
-      firedRef.current = true;
+    if (opponent?.hasPassed && !opponentFinishedRef.current) {
+      opponentFinishedRef.current = true;
       onOpponentFinished();
     }
   }, [opponent?.hasPassed, onOpponentFinished]);
+
+  useEffect(() => {
+    if (opponentForfeited && !wonRef.current) {
+      wonRef.current = true;
+      onOpponentForfeited();
+    }
+  }, [opponentForfeited, onOpponentForfeited]);
 
   const timerColor =
     timeLeft < 60
@@ -102,9 +95,7 @@ export const MatchHeader = ({
         </Button>
       </div>
 
-      <span
-        className={cn("font-mono text-base font-bold tabular-nums", timerColor)}
-      >
+      <span className={cn("font-mono text-base font-bold tabular-nums", timerColor)}>
         {display}
       </span>
 
@@ -121,11 +112,7 @@ export const MatchHeader = ({
             <AvatarFallback>{opponent.name[0]}</AvatarFallback>
           </Avatar>
           <Progress
-            value={
-              problemTotal > 0
-                ? (opponent.testCasesPassed / problemTotal) * 100
-                : 0
-            }
+            value={problemTotal > 0 ? (opponent.testCasesPassed / problemTotal) * 100 : 0}
             className="w-16 h-1.5"
           />
         </Row>

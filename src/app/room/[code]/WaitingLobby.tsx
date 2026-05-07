@@ -7,24 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Column } from "@/components/layout/Column";
 import { Row } from "@/components/layout/Row";
 import { type Difficulty } from "@/lib/consts";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { useWaitingRoom } from "@/hooks/useWaitingRoom";
+import { useMutation } from "@tanstack/react-query";
 import { Check, Copy, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-
-interface Player {
-  userId: string;
-  name: string;
-  image: string | null;
-  elo: number;
-}
-
-interface RoomData {
-  status: string;
-  hostId: string;
-  players: Player[];
-}
+import { useState } from "react";
 
 interface WaitingLobbyProps {
   code: string;
@@ -45,21 +31,8 @@ export const WaitingLobby = ({
   difficulty,
   currentUserId,
 }: WaitingLobbyProps) => {
-  const router = useRouter();
   const [copied, setCopied] = useState(false);
-
-  const { data } = useQuery<RoomData>({
-    queryKey: ["room", code],
-    queryFn: async () => {
-      const { data } = await axios.get<RoomData>(`/api/rooms/${code}`);
-      return data;
-    },
-    refetchInterval: 2000,
-  });
-
-  useEffect(() => {
-    if (data?.status === "in_progress") router.refresh();
-  }, [data?.status, router]);
+  const data = useWaitingRoom(code, roomId);
 
   const { mutate: handleLeave, isPending: leaving } = useMutation({
     mutationFn: async () => leaveRoom(roomId),
@@ -107,24 +80,24 @@ export const WaitingLobby = ({
               <Column className="gap-0.5 flex-1">
                 <Row className="items-center gap-2">
                   <span className="font-medium text-sm">{player.name}</span>
-                  {player.userId === data?.hostId && (
+                  {player.userId === data?.hostId ? (
                     <Badge variant="secondary" className="text-xs">Host</Badge>
-                  )}
-                  {player.userId === currentUserId && (
+                  ) : null}
+                  {player.userId === currentUserId ? (
                     <Badge variant="outline" className="text-xs">You</Badge>
-                  )}
+                  ) : null}
                 </Row>
                 <span className="text-xs text-muted-foreground">{player.elo} ELO</span>
               </Column>
             </Row>
           ))}
 
-          {!hasOpponent && (
+          {!hasOpponent ? (
             <Row className="items-center gap-3 rounded-lg border border-dashed border-border p-3 opacity-50">
               <div className="size-9 rounded-full bg-muted" />
               <span className="text-sm text-muted-foreground">Waiting for opponent…</span>
             </Row>
-          )}
+          ) : null}
         </Column>
 
         <Row className="items-center gap-2 text-muted-foreground">

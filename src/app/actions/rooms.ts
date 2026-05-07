@@ -4,7 +4,8 @@ import { db } from "@/db/db";
 import { rooms, roomPlayers, user, problems } from "@/db/schema";
 import { type Difficulty } from "@/lib/consts";
 import { auth } from "@/lib/auth";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
+import { broadcastToRoom } from "@/lib/supabase-server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -94,11 +95,14 @@ export const forfeitMatch = async (roomId: string) => {
   await db
     .update(roomPlayers)
     .set({ finishedAt: new Date() })
-    .where(
-      and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, session.user.id)),
-    );
+    .where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, session.user.id)));
 
-  redirect("/");
+  await db
+    .update(roomPlayers)
+    .set({ hasPassed: true })
+    .where(and(eq(roomPlayers.roomId, roomId), ne(roomPlayers.userId, session.user.id)));
+
+  broadcastToRoom(roomId, "forfeit").catch((e) => console.error("broadcast failed", e));
 };
 
 export const leaveRoom = async (roomId: string) => {
