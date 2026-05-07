@@ -8,25 +8,50 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { type Difficulty } from "@/lib/consts";
+import { TIME_LIMITS, type Difficulty } from "@/lib/consts";
 import { cn } from "@/lib/utils";
 import { Row } from "@/components/layout/Row";
 import { useRoomActions } from "@/hooks/useRoomActions";
 
-const DIFFICULTIES: { value: Difficulty; label: string; className: string }[] = [
-  { value: "easy", label: "Easy", className: "text-green-400 border-green-400/30 bg-green-400/10 hover:bg-green-400/20" },
-  { value: "medium", label: "Medium", className: "text-yellow-400 border-yellow-400/30 bg-yellow-400/10 hover:bg-yellow-400/20" },
-  { value: "hard", label: "Hard", className: "text-red-400 border-red-400/30 bg-red-400/10 hover:bg-red-400/20" },
-];
+const DIFFICULTIES: { value: Difficulty; label: string; className: string }[] =
+  [
+    {
+      value: "easy",
+      label: "Easy",
+      className:
+        "text-green-400 border-green-400/30 bg-green-400/10 hover:bg-green-400/20",
+    },
+    {
+      value: "medium",
+      label: "Medium",
+      className:
+        "text-yellow-400 border-yellow-400/30 bg-yellow-400/10 hover:bg-yellow-400/20",
+    },
+    {
+      value: "hard",
+      label: "Hard",
+      className:
+        "text-red-400 border-red-400/30 bg-red-400/10 hover:bg-red-400/20",
+    },
+  ];
 
 export const HomeActions = () => {
   const {
-    createOpen, setCreateOpen,
-    joinOpen, setJoinOpen,
-    difficulty, setDifficulty,
-    code, handleCodeChange,
-    creating, joining, joinError,
-    handleCreate, handleJoin,
+    createOpen,
+    setCreateOpen,
+    joinOpen,
+    setJoinOpen,
+    difficulty,
+    setDifficulty,
+    timeLimit,
+    setTimeLimit,
+    code,
+    handleCodeChange,
+    creating,
+    joining,
+    joinError,
+    handleCreate,
+    handleJoin,
   } = useRoomActions();
 
   return (
@@ -41,7 +66,7 @@ export const HomeActions = () => {
       </Row>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Create Room</DialogTitle>
           </DialogHeader>
@@ -64,7 +89,30 @@ export const HomeActions = () => {
                 ))}
               </Row>
             </div>
-            <Button className="w-full" onClick={handleCreate} disabled={creating}>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Time Limit</p>
+              <Row className="gap-2">
+                {TIME_LIMITS.map((mins) => (
+                  <button
+                    key={mins}
+                    onClick={() => setTimeLimit(mins)}
+                    className={cn(
+                      "flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors border-border hover:bg-accent",
+                      timeLimit === mins
+                        ? "bg-accent text-accent-foreground"
+                        : "opacity-50",
+                    )}
+                  >
+                    {mins}m
+                  </button>
+                ))}
+              </Row>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleCreate}
+              disabled={creating}
+            >
               {creating ? "Creating…" : "Create Room"}
             </Button>
           </div>
@@ -72,7 +120,7 @@ export const HomeActions = () => {
       </Dialog>
 
       <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Join Room</DialogTitle>
           </DialogHeader>
@@ -85,8 +133,14 @@ export const HomeActions = () => {
               maxLength={6}
               autoFocus
             />
-            {joinError && <p className="text-xs text-destructive">{joinError}</p>}
-            <Button type="submit" className="w-full" disabled={joining || code.length !== 6}>
+            {joinError && (
+              <p className="text-xs text-destructive">{joinError}</p>
+            )}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={joining || code.length !== 6}
+            >
               {joining ? "Joining…" : "Join Room"}
             </Button>
           </form>

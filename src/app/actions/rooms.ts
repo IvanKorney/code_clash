@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db/db";
-import { rooms, roomPlayers, user } from "@/db/schema";
+import { rooms, roomPlayers, user, problems } from "@/db/schema";
 import { type Difficulty } from "@/lib/consts";
 import { auth } from "@/lib/auth";
 import { eq, and } from "drizzle-orm";
@@ -25,7 +25,7 @@ const getUniqueCode = async (): Promise<string> => {
   return existing ? getUniqueCode() : code;
 };
 
-export const createRoom = async (difficulty: Difficulty) => {
+export const createRoom = async (difficulty: Difficulty, timeLimitMinutes: number) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
@@ -36,6 +36,7 @@ export const createRoom = async (difficulty: Difficulty) => {
     code,
     hostId: session.user.id,
     difficulty,
+    timeLimitMinutes,
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h * 60m * 60s * 1000ms = 1 day
   });
 
@@ -70,14 +71,34 @@ export const addPlayerToRoom = async (
   });
 
   if (players.length >= 2) {
+    const problemPool = await db.query.problems.findMany({
+      where: and(eq(problems.difficulty, room.difficulty), eq(problems.isActive, true)),
+      columns: { slug: true },
+    });
+    const picked = problemPool[Math.floor(Math.random() * problemPool.length)];
+
     await db
       .update(rooms)
-      .set({ status: "in_progress", matchStartedAt: new Date() })
+      .set({ status: "in_progress", matchStartedAt: new Date(), problemSlug: picked?.slug ?? null })
       .where(eq(rooms.id, roomId));
     return "in_progress";
   }
 
   return "waiting";
+};
+
+export const forfeitMatch = async (roomId: string) => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+
+  await db
+    .update(roomPlayers)
+    .set({ finishedAt: new Date() })
+    .where(
+      and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, session.user.id)),
+    );
+
+  redirect("/");
 };
 
 export const leaveRoom = async (roomId: string) => {
@@ -122,5 +143,5 @@ export const joinRoom = async (code: string) => {
   });
   if (existing) return { error: "You're already in this room" };
 
-  redirect(`/room/${code.toUpperCase()}`);
+  return { url: `/room/${code.toUpperCase()}` };
 };
