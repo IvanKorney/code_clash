@@ -131,6 +131,7 @@ export const resolveMatchOnTimeout = async (roomId: string) => {
   };
 };
 
+
 export const leaveRoom = async (roomId: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");

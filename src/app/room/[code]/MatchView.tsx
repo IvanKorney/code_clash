@@ -5,7 +5,7 @@ import {
   Group as PanelGroup,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MatchHeader } from "./MatchHeader";
 import { ProblemPanel } from "./ProblemPanel";
@@ -85,8 +85,19 @@ export const MatchView = ({
   timeLimitMinutes,
   roomId,
   problem,
+  opponent,
 }: MatchViewProps) => {
   const router = useRouter();
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === "undefined") return "javascript";
     return (localStorage.getItem("cc:lang") as Language) ?? "javascript";
@@ -178,7 +189,7 @@ export const MatchView = ({
         timeLimitMinutes={timeLimitMinutes}
         onOpponentFinished={handleOpponentFinished}
         onForfeit={() => setMatchResult("forfeit")}
-        onOpponentForfeited={() => setMatchResult("walkover")}
+        onOpponentForfeited={() => setMatchResult((r) => r === null ? "walkover" : r)}
         onMatchResolved={handleMatchResolved}
       />
       <PanelGroup orientation="horizontal" className="flex-1 min-h-0">
