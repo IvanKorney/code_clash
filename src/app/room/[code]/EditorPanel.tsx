@@ -29,11 +29,11 @@ const LANGUAGES: { value: Language; label: string; monacoId: string }[] = [
 ];
 
 const STARTER_CODE: Record<Language, string> = {
-  javascript: "/**\n * @return {*}\n */\nconst solve = function() {\n    \n};",
-  typescript: "function solve(): void {\n    \n}",
-  python: "class Solution:\n    def solve(self):\n        pass",
-  java: "class Solution {\n    public void solve() {\n        \n    }\n}",
-  cpp: "class Solution {\npublic:\n    void solve() {\n        \n    }\n};",
+  javascript: `var solution = function() {\n    \n};`,
+  typescript: `function solution(): void {\n    \n}`,
+  python: `class Solution:\n    def solution(self):\n        `,
+  java: `class Solution {\n    public void solution() {\n        \n    }\n}`,
+  cpp: `class Solution {\npublic:\n    void solution() {\n        \n    }\n};`,
 };
 
 interface EditorPanelProps {
@@ -41,6 +41,9 @@ interface EditorPanelProps {
   onLanguageChange: (lang: Language) => void;
   onRun: (code: string, language: Language) => void;
   onSubmit: (code: string, language: Language) => void;
+  isRunning: boolean;
+  isSubmitting: boolean;
+  codeSnippets: Partial<Record<Language, string>>;
 }
 
 export const EditorPanel = ({
@@ -48,11 +51,15 @@ export const EditorPanel = ({
   onLanguageChange,
   onRun,
   onSubmit,
+  isRunning,
+  isSubmitting,
+  codeSnippets,
 }: EditorPanelProps) => {
   const { theme } = useTheme();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
   const [codeByLang, setCodeByLang] = useState<Record<Language, string>>({
     ...STARTER_CODE,
+    ...codeSnippets,
   });
 
   const handleMount: OnMount = (editor) => {
@@ -63,21 +70,19 @@ export const EditorPanel = ({
     setCodeByLang((prev) => ({ ...prev, [language]: value ?? "" }));
   };
 
-  const handleLanguageChange = (lang: Language) => {
-    onLanguageChange(lang);
-  };
-
   const getCode = () => editorRef.current?.getValue() ?? codeByLang[language];
 
   const monacoLang =
     LANGUAGES.find((l) => l.value === language)?.monacoId ?? "javascript";
+
+  const busy = isRunning || isSubmitting;
 
   return (
     <Column className="h-full">
       <Row className="items-center justify-between px-3 py-2 border-b border-border shrink-0">
         <Select
           value={language}
-          onValueChange={(v) => handleLanguageChange(v as Language)}
+          onValueChange={(v) => onLanguageChange(v as Language)}
         >
           <SelectTrigger className="w-36 h-7 text-xs">
             <SelectValue />
@@ -95,11 +100,16 @@ export const EditorPanel = ({
             size="sm"
             variant="outline"
             onClick={() => onRun(getCode(), language)}
+            disabled={busy}
           >
-            Run
+            {isRunning ? "Running…" : "Run"}
           </Button>
-          <Button size="sm" onClick={() => onSubmit(getCode(), language)}>
-            Submit
+          <Button
+            size="sm"
+            onClick={() => onSubmit(getCode(), language)}
+            disabled={busy}
+          >
+            {isSubmitting ? "Submitting…" : "Submit"}
           </Button>
         </Row>
       </Row>

@@ -8,7 +8,8 @@ import { addPlayerToRoom } from "@/app/actions/rooms";
 import { WaitingLobby } from "./WaitingLobby";
 import { MatchView } from "./MatchView";
 import { Column } from "@/components/layout/Column";
-import type { TestCase } from "@/types/problem";
+import { SNIPPET_LANG } from "@/lib/consts";
+import type { Language, TestCase } from "@/types/problem";
 
 const RoomPage = async ({ params }: { params: Promise<{ code: string }> }) => {
   const { code } = await params;
@@ -88,6 +89,11 @@ const RoomPage = async ({ params }: { params: Promise<{ code: string }> }) => {
         examples: (problem.examples as TestCase[]).slice(0, 2),
         constraints: problem.constraints,
         hints: (problem.hints as string[]) ?? [],
+        codeSnippets: Object.fromEntries(
+          (problem.codeSnippets ?? [])
+            .filter(({ langSlug }) => langSlug in SNIPPET_LANG)
+            .map(({ langSlug, code }) => [SNIPPET_LANG[langSlug], code]),
+        ) as Partial<Record<Language, string>>,
       }}
       opponent={opponent}
     />
