@@ -61,7 +61,11 @@ export const MatchHeader = ({
   useOnce(!!opponent?.hasPassed, onOpponentFinished);
   useOnce(opponentForfeited, onOpponentForfeited);
   useOnce(!!resolution, () => resolution && onMatchResolved(resolution));
-  useOnce(timeLeft === 0, () => resolveMatchOnTimeout(roomId).catch(console.error));
+  useOnce(timeLeft === 0, () => {
+    resolveMatchOnTimeout(roomId)
+      .then((result) => { if (result) onMatchResolved(result); })
+      .catch(console.error);
+  });
 
   const timerColor =
     timeLeft < 60

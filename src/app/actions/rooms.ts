@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db/db";
-import { rooms, roomPlayers, user, problems } from "@/db/schema";
+import { rooms, roomPlayers, user, problems, matches, eloHistory } from "@/db/schema";
 import { type Difficulty } from "@/lib/consts";
 import { auth } from "@/lib/auth";
 import { eq, and, ne } from "drizzle-orm";
@@ -110,8 +110,25 @@ export const forfeitMatch = async (roomId: string) => {
 
 export const resolveMatchOnTimeout = async (roomId: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return;
-  await resolveMatch(roomId, "timeout");
+  if (!session) return null;
+
+  await resolveMatch(roomId, "timeout").catch(console.error);
+
+  const match = await db.query.matches.findFirst({
+    where: eq(matches.roomId, roomId),
+  });
+  if (!match) return null;
+
+  const myHistory = await db.query.eloHistory.findFirst({
+    where: and(eq(eloHistory.matchId, match.id), eq(eloHistory.userId, session.user.id)),
+  });
+
+  return {
+    winnerId: match.winnerId ?? null,
+    loserId: match.loserId ?? null,
+    myDelta: myHistory?.delta ?? 0,
+    myEloAfter: myHistory?.eloAfter ?? 0,
+  };
 };
 
 export const leaveRoom = async (roomId: string) => {
