@@ -1,9 +1,9 @@
 import axios from "axios";
 
-export const broadcastToRoom = async (roomId: string, event: string, payload: object = {}) => {
+const broadcast = async (topic: string, event: string, payload: object = {}) => {
   await axios.post(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`,
-    { messages: [{ topic: `match:${roomId}`, event, payload }] },
+    { messages: [{ topic, event, payload }] },
     {
       headers: {
         apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -13,3 +13,9 @@ export const broadcastToRoom = async (roomId: string, event: string, payload: ob
     },
   );
 };
+
+export const broadcastToRoom = (roomId: string, event: string, payload: object = {}) =>
+  broadcast(`match:${roomId}`, event, payload);
+
+export const broadcastToWaitingRoom = (roomId: string, event: string, payload: object = {}) =>
+  broadcast(`room:${roomId}`, event, payload);

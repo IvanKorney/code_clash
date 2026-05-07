@@ -10,10 +10,7 @@ export interface ProblemMeta {
 // ─── Uncomment "Definition for..." blocks from LeetCode snippets ──────────────
 
 const uncommentDefinitions = (code: string, language: Language): string => {
-  if (language === "python") {
-    // Strip "# " prefix from commented class bodies: "# class X:", "#     def ...", "#     ..."
-    return code.replace(/^# ((?:class |    ).*)$/gm, "$1");
-  }
+  if (language === "python") return code;
   // JS/TS/Java/C++: uncomment JSDoc blocks that contain "Definition for"
   return code.replace(/\/\*\*[\s\S]*?\*\//g, (block) => {
     if (!block.includes("Definition for")) return block;
@@ -43,6 +40,17 @@ function _buildList(a: (number|null)[]): any { if (!a?.length || a[0]==null) ret
 function _listToArr(n: any): number[] { const r: number[]=[]; while(n){r.push(n.val);n=n.next;} return r; }
 function _buildTree(a: (number|null)[]): any { if(!a?.length||a[0]==null) return null; const r: any=new (TreeNode as any)(a[0]),q: any[]=[r];let i=1; while(q.length&&i<a.length){const n=q.shift();if(a[i]!=null){n.left=new (TreeNode as any)(a[i]);q.push(n.left);}i++;if(i<a.length&&a[i]!=null){n.right=new (TreeNode as any)(a[i]);q.push(n.right);}i++;} return r; }
 function _treeToArr(r: any): (number|null)[] { if(!r) return []; const res:(number|null)[]=[], q: any[]=[r]; while(q.length){const n=q.shift();res.push(n?n.val:null);if(n){q.push(n.left);q.push(n.right);}} while(res.length&&res[res.length-1]==null) res.pop(); return res; }`;
+
+const PY_HELPERS = `\
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right`;
 
 const PY_UTILS = `\
 def _build_list(arr):
@@ -211,7 +219,6 @@ const buildJS = (userCode: string, meta: ProblemMeta, isTS: boolean): string => 
   const paramLines = meta.params.map((p, i) => `const _p${i} = ${jsParseExpr(p.type)};`).join("\n");
   const args = meta.params.map((_, i) => `_p${i}`).join(", ");
   const header = isTS ? "// @ts-nocheck\n" : "";
-
   return `${header}${code}
 
 ${utils}
@@ -227,9 +234,11 @@ const buildPython = (userCode: string, meta: ProblemMeta): string => {
   const code = uncommentDefinitions(userCode, "python");
   const paramLines = meta.params.map((p, i) => `_p${i} = ${pyParseExpr(p.type)}`).join("\n");
   const args = meta.params.map((_, i) => `_p${i}`).join(", ");
-
   return `import sys, json
-from typing import Optional, List, Tuple
+from typing import Optional, List, Dict, Set, Tuple, Any, Union
+from collections import deque, defaultdict
+
+${PY_HELPERS}
 
 ${code}
 
@@ -246,7 +255,6 @@ const buildJava = (userCode: string, meta: ProblemMeta): string => {
   const code = uncommentDefinitions(userCode, "java");
   const paramLines = meta.params.map((p, i) => `        ${javaParseLines(p.type, i)}`).join("\n");
   const args = meta.params.map((_, i) => `_p${i}`).join(", ");
-
   return `import java.util.*;
 import java.io.*;
 
@@ -267,7 +275,6 @@ const buildCpp = (userCode: string, meta: ProblemMeta): string => {
   const code = uncommentDefinitions(userCode, "cpp");
   const paramLines = meta.params.map((p, i) => `    ${cppReadLines(p.type, i)}`).join("\n");
   const args = meta.params.map((_, i) => `_p${i}`).join(", ");
-
   return `#include <bits/stdc++.h>
 using namespace std;
 

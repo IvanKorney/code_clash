@@ -6,8 +6,18 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { buildDriverCode, type ProblemMeta } from "@/lib/driver";
 import { PISTON_LANG } from "@/lib/consts";
+import { resolveMatch } from "@/lib/resolve";
 import axios from "axios";
 import type { Language, TestCase } from "@/types/problem";
+
+const decodeHtml = (s: string) =>
+  s
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 
 const runCase = async (
   wrappedCode: string,
@@ -61,12 +71,14 @@ export const POST = async (request: Request) => {
 
   const results = await Promise.all(
     testCases.map(async (tc, i) => {
-      const { stdout, stderr } = await runCase(wrappedCode, lang, tc.input);
-      const passed = stdout === tc.expected_output.trim();
+      const input = decodeHtml(tc.input);
+      const { stdout, stderr } = await runCase(wrappedCode, lang, input);
+      const expected = decodeHtml(tc.expected_output.trim());
+      const passed = stdout === expected;
       return {
         index: i,
-        input: tc.input,
-        expected: tc.expected_output,
+        input,
+        expected,
         actual: stdout,
         stderr,
         passed,
@@ -92,6 +104,10 @@ export const POST = async (request: Request) => {
         eq(roomPlayers.userId, session.user.id),
       ),
     );
+
+  if (allPassed) {
+    resolveMatch(roomId, "completed").catch(console.error);
+  }
 
   return NextResponse.json({
     passed,

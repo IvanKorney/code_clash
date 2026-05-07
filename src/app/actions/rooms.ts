@@ -1,11 +1,12 @@
 "use server";
 
 import { db } from "@/db/db";
-import { rooms, roomPlayers, user, problems } from "@/db/schema";
+import { rooms, roomPlayers, user, problems, matches, eloHistory } from "@/db/schema";
 import { type Difficulty } from "@/lib/consts";
 import { auth } from "@/lib/auth";
 import { eq, and, ne } from "drizzle-orm";
-import { broadcastToRoom } from "@/lib/supabase-server";
+import { broadcastToRoom, broadcastToWaitingRoom } from "@/lib/supabase-server";
+import { resolveMatch } from "@/lib/resolve";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -82,6 +83,7 @@ export const addPlayerToRoom = async (
       .update(rooms)
       .set({ status: "in_progress", matchStartedAt: new Date(), problemSlug: picked?.slug ?? null })
       .where(eq(rooms.id, roomId));
+    broadcastToWaitingRoom(roomId, "match_started").catch(console.error);
     return "in_progress";
   }
 
@@ -102,7 +104,31 @@ export const forfeitMatch = async (roomId: string) => {
     .set({ hasPassed: true })
     .where(and(eq(roomPlayers.roomId, roomId), ne(roomPlayers.userId, session.user.id)));
 
-  broadcastToRoom(roomId, "forfeit").catch((e) => console.error("broadcast failed", e));
+  broadcastToRoom(roomId, "forfeit", { forfeitingUserId: session.user.id }).catch((e) => console.error("broadcast failed", e));
+  resolveMatch(roomId, "forfeit").catch((e) => console.error("resolve failed", e));
+};
+
+export const resolveMatchOnTimeout = async (roomId: string) => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return null;
+
+  await resolveMatch(roomId, "timeout").catch(console.error);
+
+  const match = await db.query.matches.findFirst({
+    where: eq(matches.roomId, roomId),
+  });
+  if (!match) return null;
+
+  const myHistory = await db.query.eloHistory.findFirst({
+    where: and(eq(eloHistory.matchId, match.id), eq(eloHistory.userId, session.user.id)),
+  });
+
+  return {
+    winnerId: match.winnerId ?? null,
+    loserId: match.loserId ?? null,
+    myDelta: myHistory?.delta ?? 0,
+    myEloAfter: myHistory?.eloAfter ?? 0,
+  };
 };
 
 export const leaveRoom = async (roomId: string) => {

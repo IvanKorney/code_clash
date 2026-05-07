@@ -1,9 +1,18 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import type { Language, MatchResult, PanelOutput, SubmitOutput, TestCase } from "@/types/problem";
+
+const decodeHtml = (s: string) =>
+  s
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 
 interface UseMatchProps {
   roomId: string;
@@ -15,21 +24,29 @@ export const useMatch = ({ roomId, problemSlug, firstExample }: UseMatchProps) =
   const [output, setOutput] = useState<PanelOutput | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
+  const example = useMemo(
+    () =>
+      firstExample
+        ? { input: decodeHtml(firstExample.input), expected_output: decodeHtml(firstExample.expected_output) }
+        : undefined,
+    [firstExample],
+  );
+
   const { mutate: run, isPending: isRunning } = useMutation({
     mutationFn: async ({ userCode, lang }: { userCode: string; lang: Language }) => {
       const { data } = await axios.post("/api/execute", {
         code: userCode,
         language: lang,
         problemSlug,
-        stdin: firstExample?.input ?? "",
+        stdin: example?.input ?? "",
       });
       return data as { stdout: string; stderr: string; exitCode: number | null };
     },
     onSuccess: (data) => {
       setOutput({
         type: "run",
-        input: firstExample?.input ?? "",
-        expected: firstExample?.expected_output ?? "",
+        input: example?.input ?? "",
+        expected: example?.expected_output ?? "",
         stdout: data.stdout,
         stderr: data.stderr,
         exitCode: data.exitCode,
