@@ -1,30 +1,25 @@
 "use client";
 
-import { forfeitMatch } from "@/app/actions/rooms";
+import { forfeitMatch, resolveMatchOnTimeout } from "@/app/actions/rooms";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Row } from "@/components/layout/Row";
 import { Column } from "@/components/layout/Column";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { useRoomPlayers } from "@/hooks/useRoomPlayers";
+import { useEffect, useRef } from "react";
+import { useRoomPlayers, type MatchResolution } from "@/hooks/useRoomPlayers";
+import { useTimer } from "@/hooks/useTimer";
 import { cn } from "@/lib/utils";
 
-const useTimer = (matchStartedAtMs: number, timeLimitMinutes: number) => {
-  const [timeLeft, setTimeLeft] = useState(() => {
-    const elapsed = Math.floor((Date.now() - matchStartedAtMs) / 1000);
-    return Math.max(0, timeLimitMinutes * 60 - elapsed);
-  });
-
+const useOnce = (condition: boolean, fn: () => void) => {
+  const fired = useRef(false);
   useEffect(() => {
-    const id = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const m = Math.floor(timeLeft / 60);
-  const s = timeLeft % 60;
-  return { timeLeft, display: `${m}:${s.toString().padStart(2, "0")}` };
+    if (condition && !fired.current) {
+      fired.current = true;
+      fn();
+    }
+  }, [condition, fn]);
 };
 
 interface MatchHeaderProps {
@@ -36,6 +31,7 @@ interface MatchHeaderProps {
   onOpponentFinished: () => void;
   onForfeit: () => void;
   onOpponentForfeited: () => void;
+  onMatchResolved: (resolution: MatchResolution) => void;
 }
 
 export const MatchHeader = ({
@@ -47,32 +43,25 @@ export const MatchHeader = ({
   onOpponentFinished,
   onForfeit,
   onOpponentForfeited,
+  onMatchResolved,
 }: MatchHeaderProps) => {
   const { timeLeft, display } = useTimer(matchStartedAtMs, timeLimitMinutes);
-  const opponentFinishedRef = useRef(false);
-  const wonRef = useRef(false);
+  const { players, problemTotal, opponentForfeited, resolution } = useRoomPlayers(
+    code,
+    roomId,
+    currentUserId,
+  );
+  const opponent = players.find((p) => p.userId !== currentUserId);
 
   const { mutate: handleGiveUp, isPending: givingUp } = useMutation({
     mutationFn: async () => forfeitMatch(roomId),
     onSuccess: () => onForfeit(),
   });
 
-  const { players, problemTotal, opponentForfeited } = useRoomPlayers(code, roomId);
-  const opponent = players.find((p) => p.userId !== currentUserId);
-
-  useEffect(() => {
-    if (opponent?.hasPassed && !opponentFinishedRef.current) {
-      opponentFinishedRef.current = true;
-      onOpponentFinished();
-    }
-  }, [opponent?.hasPassed, onOpponentFinished]);
-
-  useEffect(() => {
-    if (opponentForfeited && !wonRef.current) {
-      wonRef.current = true;
-      onOpponentForfeited();
-    }
-  }, [opponentForfeited, onOpponentForfeited]);
+  useOnce(!!opponent?.hasPassed, onOpponentFinished);
+  useOnce(opponentForfeited, onOpponentForfeited);
+  useOnce(!!resolution, () => resolution && onMatchResolved(resolution));
+  useOnce(timeLeft === 0, () => resolveMatchOnTimeout(roomId).catch(console.error));
 
   const timerColor =
     timeLeft < 60

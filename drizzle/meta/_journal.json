@@ -43,6 +43,13 @@
       "when": 1778008763943,
       "tag": "0005_flippant_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778181042083,
+      "tag": "0006_spotty_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

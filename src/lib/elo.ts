@@ -1,3 +1,20 @@
+const kFactor = (elo: number) => {
+  if (elo < 1200) return 40;
+  if (elo < 1600) return 32;
+  return 24;
+};
+
+export const calcElo = (ratingA: number, ratingB: number, scoreA: 1 | 0) => {
+  const expected = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+  const kA = kFactor(ratingA);
+  const kB = kFactor(ratingB);
+  const deltaA = Math.round(kA * (scoreA - expected));
+  const deltaB = Math.round(kB * (1 - scoreA - (1 - expected)));
+  const newA = Math.max(0, ratingA + deltaA);
+  const newB = Math.max(0, ratingB + deltaB);
+  return { newA, newB, deltaA: newA - ratingA, deltaB: newB - ratingB };
+};
+
 export type EloTier = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond" | "Master";
 
 export function getEloTier(elo: number): EloTier {

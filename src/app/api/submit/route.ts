@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { buildDriverCode, type ProblemMeta } from "@/lib/driver";
 import { PISTON_LANG } from "@/lib/consts";
+import { resolveMatch } from "@/lib/resolve";
 import axios from "axios";
 import type { Language, TestCase } from "@/types/problem";
 
@@ -92,6 +93,10 @@ export const POST = async (request: Request) => {
         eq(roomPlayers.userId, session.user.id),
       ),
     );
+
+  if (allPassed) {
+    resolveMatch(roomId, "completed").catch(console.error);
+  }
 
   return NextResponse.json({
     passed,

@@ -39,7 +39,7 @@ export const user = pgTable(
     updatedAt: timestamp("updated_at").notNull(),
     // App-specific fields
     username: text("username").unique(),
-    elo: integer("elo").default(1200).notNull(),
+    elo: integer("elo").default(1000).notNull(),
     bio: text("bio"),
     preferredLanguage: text("preferred_language").default("javascript"),
     country: text("country"),
