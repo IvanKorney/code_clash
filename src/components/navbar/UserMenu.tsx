@@ -96,7 +96,7 @@ export const UserMenu = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={`/profile/${session.user.id}`} className="flex items-center gap-2">
+          <Link href={`/profile/${userData?.username ?? session.user.id}`} className="flex items-center gap-2">
             <User className="size-4" />
             Profile
           </Link>
