@@ -299,7 +299,12 @@ export const buildDriverCode = (
   language: Language,
   meta: ProblemMeta | null,
 ): string => {
-  if (!meta || meta.manual) return userCode;
+  if (!meta || meta.manual) {
+    if (language === "python") {
+      return `import sys, json\nfrom typing import Optional, List, Dict, Set, Tuple, Any, Union\nfrom collections import deque, defaultdict\n\n${PY_HELPERS}\n\n${userCode}`;
+    }
+    return uncommentDefinitions(userCode, language);
+  }
   switch (language) {
     case "javascript": return buildJS(userCode, meta, false);
     case "typescript": return buildJS(userCode, meta, true);

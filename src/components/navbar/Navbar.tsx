@@ -3,6 +3,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { UserMenu } from "./UserMenu";
 import Image from "next/image";
 import Link from "next/link";
+import { Trophy } from "lucide-react";
 
 export const Navbar = () => {
   return (
@@ -22,6 +23,13 @@ export const Navbar = () => {
             </span>
           </Link>
           <ThemeToggle />
+          <Link
+            href="/leaderboard"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Trophy className="size-4" />
+            <span className="hidden sm:block">Leaderboard</span>
+          </Link>
         </Row>
 
         <UserMenu />

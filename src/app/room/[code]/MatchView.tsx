@@ -13,11 +13,13 @@ import { EditorPanel } from "./EditorPanel";
 import { OutputPanel } from "./OutputPanel";
 import { Button } from "@/components/ui/button";
 import { Column } from "@/components/layout/Column";
+import { Center } from "@/components/layout/Center";
 import { useMatch } from "@/hooks/useMatch";
 import { cn } from "@/lib/utils";
 import type { MatchResolution } from "@/hooks/useRoomPlayers";
 import type { Difficulty } from "@/lib/consts";
 import type { Language, MatchResult, TestCase } from "@/types/problem";
+import { Row } from "@/components/layout/Row";
 
 const MATCH_RESULT_COPY: Record<
   MatchResult,
@@ -85,7 +87,6 @@ export const MatchView = ({
   timeLimitMinutes,
   roomId,
   problem,
-  opponent,
 }: MatchViewProps) => {
   const router = useRouter();
 
@@ -149,7 +150,7 @@ export const MatchView = ({
   return (
     <Column className="relative h-[calc(100vh-3.5rem)]">
       {matchResult && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <Center className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm">
           <Column className="items-center gap-4">
             {(() => {
               const { emoji, title, subtitle } = MATCH_RESULT_COPY[matchResult];
@@ -176,9 +177,16 @@ export const MatchView = ({
                 </>
               );
             })()}
-            <Button onClick={() => router.push("/")}>Back to Home</Button>
+            <Row className="gap-3">
+              <Button onClick={() => router.push(`/room/${code}/result`)}>
+                View Results
+              </Button>
+              <Button variant="outline" onClick={() => router.push("/")}>
+                Back to Home
+              </Button>
+            </Row>
           </Column>
-        </div>
+        </Center>
       )}
 
       <MatchHeader
@@ -189,7 +197,9 @@ export const MatchView = ({
         timeLimitMinutes={timeLimitMinutes}
         onOpponentFinished={handleOpponentFinished}
         onForfeit={() => setMatchResult("forfeit")}
-        onOpponentForfeited={() => setMatchResult((r) => r === null ? "walkover" : r)}
+        onOpponentForfeited={() =>
+          setMatchResult((r) => (r === null ? "walkover" : r))
+        }
         onMatchResolved={handleMatchResolved}
       />
       <PanelGroup orientation="horizontal" className="flex-1 min-h-0">
