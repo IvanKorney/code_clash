@@ -99,7 +99,7 @@ const seed = async () => {
   const client = postgres(process.env.DATABASE_URL!, { ssl: "require" });
   const db = drizzle(client);
 
-  const difficulty = "hard";
+  const difficulty = "easy";
 
   console.log(`\nFetching ${difficulty} problems...`);
 
