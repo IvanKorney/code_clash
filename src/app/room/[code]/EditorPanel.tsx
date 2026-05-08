@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Column } from "@/components/layout/Column";
 import { Row } from "@/components/layout/Row";
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { OnMount } from "@monaco-editor/react";
+import type { Monaco } from "@monaco-editor/react";
 import type { Language } from "@/types/problem";
 import { useLocalCode } from "@/hooks/useLocalCode";
 import { useTheme } from "next-themes";
@@ -61,9 +62,35 @@ export const EditorPanel = ({
   const { theme } = useTheme();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
   const { codeByLang, updateCode } = useLocalCode(roomId, { ...STARTER_CODE, ...codeSnippets });
+  const hasLeftPage = useRef(false);
+  const [pasteBlocked, setPasteBlocked] = useState(false);
 
-  const handleMount: OnMount = (editor) => {
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) hasLeftPage.current = true;
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  const handleMount: OnMount = (editor, monaco: Monaco) => {
     editorRef.current = editor;
+
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC,
+      () => {
+        hasLeftPage.current = false;
+        editor.trigger("keyboard", "editor.action.clipboardCopyAction", null);
+      },
+    );
+
+    editor.onDidPaste(() => {
+      if (hasLeftPage.current) {
+        editor.trigger("", "undo", null);
+        setPasteBlocked(true);
+        setTimeout(() => setPasteBlocked(false), 3000);
+      }
+    });
   };
 
   const handleChange = (value: string | undefined) => {
@@ -95,6 +122,9 @@ export const EditorPanel = ({
             ))}
           </SelectContent>
         </Select>
+        {pasteBlocked && (
+          <span className="text-destructive text-xs">External paste blocked</span>
+        )}
         <Row className="gap-2">
           <Button
             size="sm"
@@ -128,6 +158,7 @@ export const EditorPanel = ({
             padding: { top: 12 },
             lineNumbersMinChars: 3,
             tabSize: 2,
+            contextmenu: false,
           }}
         />
       </div>
