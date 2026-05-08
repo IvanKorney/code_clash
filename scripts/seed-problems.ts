@@ -2,16 +2,15 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import axios from "axios";
 import { problems } from "../src/db/schema";
+import { DIFFICULTIES } from "../src/lib/consts";
 import type { TestCase } from "../src/types/problem";
 import type { Difficulty } from "../src/lib/consts";
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 const API_BASE = "https://alfa-leetcode-api.onrender.com";
 const LIMIT_BY_DIFFICULTY: Record<Difficulty, number> = {
-  easy: 120,
-  medium: 120,
-  hard: 120,
+  easy: 100,
+  medium: 150,
+  hard: 50,
 };
 
 const HTML_TAG_REGEX = /<[^>]+>/g;
@@ -49,9 +48,9 @@ interface MetaData {
 }
 
 interface RawQuestion {
-  title?: string;
+  questionTitle?: string;
   titleSlug: string;
-  content?: string;
+  question: string;
   topicTags?: TopicTag[];
   hints?: string[];
   codeSnippets?: CodeSnippet[];
@@ -99,99 +98,98 @@ const seed = async () => {
   const client = postgres(process.env.DATABASE_URL!, { ssl: "require" });
   const db = drizzle(client);
 
-  const difficulty = "easy";
+  for (const difficulty of DIFFICULTIES) {
+    console.log(`\nFetching ${difficulty} problems...`);
 
-  console.log(`\nFetching ${difficulty} problems...`);
-
-  const listData = (
-    await axios.get<ProblemListResponse>(`${API_BASE}/problems`, {
-      params: {
-        limit: LIMIT_BY_DIFFICULTY[difficulty],
-        difficulty: difficulty.toUpperCase(),
-      },
-    })
-  ).data;
-  const problemList = (listData.problemsetQuestionList ?? []).filter(
-    (p) => !p.isPaidOnly,
-  );
-  console.log(`Found ${problemList.length} free problems`);
-
-  for (const p of problemList) {
-    const detail = (
-      await axios.get<RawDetailResponse>(`${API_BASE}/select/raw`, {
-        params: { titleSlug: p.titleSlug },
+    const listData = (
+      await axios.get<ProblemListResponse>(`${API_BASE}/problems`, {
+        params: {
+          limit: LIMIT_BY_DIFFICULTY[difficulty],
+          difficulty: difficulty.toUpperCase(),
+        },
       })
-    ).data.question;
-
-    const title = detail.title;
-    const description = detail.content;
-
-    if (!title || !description) {
-      console.log(` ⚠ Skipping ${p.titleSlug} (missing data)`);
-      continue;
-    }
-
-    const metaData: MetaData | null = (() => {
-      try {
-        return detail.metaData
-          ? (JSON.parse(detail.metaData) as MetaData)
-          : null;
-      } catch {
-        return null;
-      }
-    })();
-
-    if (!metaData || metaData.manual || !Array.isArray(metaData.params)) {
-      console.log(` ⚠ Skipping ${p.titleSlug} (no metaData or manual)`);
-      continue;
-    }
-
-    const inputs = splitInputs(
-      detail.exampleTestcases ?? "",
-      metaData.params.length,
+    ).data;
+    const problemList = (listData.problemsetQuestionList ?? []).filter(
+      (p) => !p.isPaidOnly,
     );
-    const expectedOutputs = parseExpectedOutputs(description);
+    console.log(`Found ${problemList.length} free problems`);
 
-    const testCases: TestCase[] = inputs
-      .map((input, i) =>
-        expectedOutputs[i] != null
-          ? { input, expected_output: expectedOutputs[i] }
-          : null,
-      )
-      .filter((tc): tc is TestCase => tc !== null);
+    for (const p of problemList) {
+      const detail = (
+        await axios.get<RawDetailResponse>(`${API_BASE}/select/raw`, {
+          params: { titleSlug: p.titleSlug },
+        })
+      ).data.question;
 
-    if (testCases.length === 0) {
-      console.log(` ⚠ Skipping ${p.titleSlug} (no parseable test cases)`);
-      continue;
+      const title = detail.questionTitle;
+      const description = detail.question;
+
+      if (!title || !description) {
+        console.log(` ⚠ Skipping ${p.titleSlug} (missing data)`);
+        continue;
+      }
+
+      const metaData: MetaData | null = (() => {
+        try {
+          return detail.metaData
+            ? (JSON.parse(detail.metaData) as MetaData)
+            : null;
+        } catch {
+          return null;
+        }
+      })();
+
+      if (!metaData || metaData.manual) {
+        console.log(` ⚠ Skipping ${p.titleSlug} (no metaData or manual)`);
+        continue;
+      }
+
+      const inputs = splitInputs(
+        detail.exampleTestcases ?? "",
+        metaData.params.length,
+      );
+      const expectedOutputs = parseExpectedOutputs(description);
+
+      const testCases: TestCase[] = inputs
+        .map((input, i) =>
+          expectedOutputs[i] != null
+            ? { input, expected_output: expectedOutputs[i] }
+            : null,
+        )
+        .filter((tc): tc is TestCase => tc !== null);
+
+      if (testCases.length === 0) {
+        console.log(` ⚠ Skipping ${p.titleSlug} (no parseable test cases)`);
+        continue;
+      }
+
+      await db
+        .insert(problems)
+        .values({
+          id: crypto.randomUUID(),
+          title,
+          slug: detail.titleSlug,
+          difficulty,
+          acceptanceRate: p.acRate,
+          description,
+          examples: testCases.slice(0, 2),
+          constraints: parseConstraints(description),
+          tags: detail.topicTags?.map((t) => t.slug) ?? [],
+          topicTags:
+            detail.topicTags?.map((t) => ({ name: t.name, slug: t.slug })) ??
+            [],
+          hints: detail.hints ?? [],
+          testCases,
+          codeSnippets: (detail.codeSnippets ?? []).map(
+            ({ langSlug, code }) => ({ langSlug, code }),
+          ),
+          metaData,
+          isActive: true,
+        })
+        .onConflictDoNothing();
+
+      console.log(`  ✓ ${title} (${testCases.length} test cases)`);
     }
-
-    await db
-      .insert(problems)
-      .values({
-        id: crypto.randomUUID(),
-        title,
-        slug: detail.titleSlug,
-        difficulty,
-        acceptanceRate: p.acRate,
-        description,
-        examples: testCases.slice(0, 2),
-        constraints: parseConstraints(description),
-        tags: detail.topicTags?.map((t) => t.slug) ?? [],
-        topicTags:
-          detail.topicTags?.map((t) => ({ name: t.name, slug: t.slug })) ?? [],
-        hints: detail.hints ?? [],
-        testCases,
-        codeSnippets: (detail.codeSnippets ?? []).map(({ langSlug, code }) => ({
-          langSlug,
-          code,
-        })),
-        metaData,
-        isActive: true,
-      })
-      .onConflictDoNothing();
-
-    console.log(`  ✓ ${title} (${testCases.length} test cases)`);
-    await sleep(300);
   }
 
   await client.end();
