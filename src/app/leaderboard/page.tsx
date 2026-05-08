@@ -9,6 +9,7 @@ import { Row } from "@/components/layout/Row";
 import { cn } from "@/lib/utils";
 import { desc, gt, eq, count } from "drizzle-orm";
 import { headers } from "next/headers";
+import Link from "next/link";
 
 const RANK_COLORS: Record<number, string> = {
   1: "text-yellow-400 font-bold",
@@ -35,9 +36,10 @@ const PlayerRow = ({
     .toUpperCase();
 
   return (
+    <Link href={`/profile/${player.username ?? player.id}`}>
     <Row
       className={cn(
-        "items-center gap-4 rounded-lg border border-border px-4 py-3",
+        "items-center gap-4 rounded-lg border border-border px-4 py-3 hover:bg-elevated transition-colors",
         isMe && "border-primary/40 bg-primary/5",
       )}
     >
@@ -66,6 +68,7 @@ const PlayerRow = ({
         {player.elo} ELO
       </span>
     </Row>
+    </Link>
   );
 };
 

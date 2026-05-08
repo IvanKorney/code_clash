@@ -41,16 +41,18 @@ interface UserData {
 const Field = ({
   label,
   hint,
+  error,
   children,
 }: {
   label: string;
   hint?: string;
+  error?: boolean;
   children: React.ReactNode;
 }) => (
   <Column className="gap-1.5">
     <label className="text-sm font-medium">{label}</label>
     {children}
-    {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    {hint && <p className={`text-xs ${error ? "text-destructive" : "text-muted-foreground"}`}>{hint}</p>}
   </Column>
 );
 
@@ -85,6 +87,22 @@ const SettingsPage = () => {
     setTwitter(userData.twitter ?? "");
     setInstagram(userData.instagram ?? "");
   }, [userData]);
+
+  const isValidUrl = (val: string) => {
+    if (!val) return true;
+    try {
+      return new URL(val).protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
+  const urlErrors = {
+    linkedin: linkedin && !isValidUrl(linkedin),
+    twitter: twitter && !isValidUrl(twitter),
+    instagram: instagram && !isValidUrl(instagram),
+  };
+  const hasUrlErrors = Object.values(urlErrors).some(Boolean);
 
   const { mutate: save, isPending, isSuccess } = useMutation({
     mutationFn: async () => {
@@ -183,30 +201,33 @@ const SettingsPage = () => {
             Social Links
           </p>
 
-          <Field label="LinkedIn">
+          <Field label="LinkedIn" hint={urlErrors.linkedin ? "Must be a valid https:// URL" : undefined} error={urlErrors.linkedin}>
             <Input
               value={linkedin}
               onChange={(e) => setLinkedin(e.target.value)}
+              className={urlErrors.linkedin ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
 
-          <Field label="X / Twitter">
+          <Field label="X / Twitter" hint={urlErrors.twitter ? "Must be a valid https:// URL" : undefined} error={urlErrors.twitter}>
             <Input
               value={twitter}
               onChange={(e) => setTwitter(e.target.value)}
+              className={urlErrors.twitter ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
 
-          <Field label="Instagram">
+          <Field label="Instagram" hint={urlErrors.instagram ? "Must be a valid https:// URL" : undefined} error={urlErrors.instagram}>
             <Input
               value={instagram}
               onChange={(e) => setInstagram(e.target.value)}
+              className={urlErrors.instagram ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
         </Column>
 
         <Row className="items-center gap-3">
-          <Button onClick={() => save()} disabled={isPending}>
+          <Button onClick={() => save()} disabled={isPending || hasUrlErrors}>
             {isPending ? "Saving…" : "Save Changes"}
           </Button>
           {isSuccess && (

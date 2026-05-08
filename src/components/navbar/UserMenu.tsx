@@ -28,7 +28,6 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 const NAV_ITEMS: { label: string; href: string; icon: LucideIcon }[] = [
-  { label: "Profile", href: "/profile", icon: User },
   { label: "Match History", href: "/match-history", icon: History },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
@@ -96,6 +95,12 @@ export const UserMenu = () => {
           </Column>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={`/profile/${session.user.id}`} className="flex items-center gap-2">
+            <User className="size-4" />
+            Profile
+          </Link>
+        </DropdownMenuItem>
         {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
           <DropdownMenuItem key={href} asChild>
             <Link href={href} className="flex items-center gap-2">

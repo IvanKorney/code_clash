@@ -1,19 +1,21 @@
-import { auth } from "@/lib/auth";
 import { db } from "@/db/db";
 import { user, matches, eloHistory, problems } from "@/db/schema";
-import { eq, desc, count, asc, inArray } from "drizzle-orm";
+import { eq, desc, count, asc, inArray, or } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getEloTier, ELO_TIER_COLORS } from "@/lib/elo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Column } from "@/components/layout/Column";
 import { Row } from "@/components/layout/Row";
 import { Center } from "@/components/layout/Center";
 import { cn } from "@/lib/utils";
-import { EloChart } from "./EloChart";
+import { EloChart } from "../EloChart";
 import { ExternalLink } from "lucide-react";
+import Link from "next/link";
 import type { MatchResult } from "@/types/problem";
 
 const RESULT_STYLES: Record<MatchResult, string> = {
@@ -48,53 +50,60 @@ const StatCard = ({
   </Column>
 );
 
-const ProfilePage = async () => {
+const ProfilePage = async ({
+  params,
+}: {
+  params: Promise<{ identifier: string }>;
+}) => {
+  const { identifier } = await params;
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/sign-in");
 
-  const userId = session.user.id;
+  const profile = await db.query.user.findFirst({
+    where: or(eq(user.username, identifier), eq(user.id, identifier)),
+  });
 
-  const [profile, matchRows, eloRows, [{ wins }], [{ losses }]] =
-    await Promise.all([
-      db.query.user.findFirst({ where: eq(user.id, userId) }),
-      db
-        .select({
-          matchId: eloHistory.matchId,
-          delta: eloHistory.delta,
-          eloBefore: eloHistory.eloBefore,
-          eloAfter: eloHistory.eloAfter,
-          createdAt: eloHistory.createdAt,
-          winnerId: matches.winnerId,
-          loserId: matches.loserId,
-          resultType: matches.resultType,
-          problemSlug: matches.problemSlug,
-          durationSeconds: matches.durationSeconds,
-        })
-        .from(eloHistory)
-        .innerJoin(matches, eq(eloHistory.matchId, matches.id))
-        .where(eq(eloHistory.userId, userId))
-        .orderBy(desc(eloHistory.createdAt))
-        .limit(50),
-      db
-        .select({
-          eloAfter: eloHistory.eloAfter,
-          delta: eloHistory.delta,
-          createdAt: eloHistory.createdAt,
-        })
-        .from(eloHistory)
-        .where(eq(eloHistory.userId, userId))
-        .orderBy(asc(eloHistory.createdAt)),
-      db
-        .select({ wins: count() })
-        .from(matches)
-        .where(eq(matches.winnerId, userId)),
-      db
-        .select({ losses: count() })
-        .from(matches)
-        .where(eq(matches.loserId, userId)),
-    ]);
+  if (!profile) notFound();
 
-  if (!profile) redirect("/");
+  const userId = profile.id;
+  const isOwnProfile = session?.user.id === userId;
+
+  const [matchRows, eloRows, [{ wins }], [{ losses }]] = await Promise.all([
+    db
+      .select({
+        matchId: eloHistory.matchId,
+        delta: eloHistory.delta,
+        eloBefore: eloHistory.eloBefore,
+        eloAfter: eloHistory.eloAfter,
+        createdAt: eloHistory.createdAt,
+        winnerId: matches.winnerId,
+        loserId: matches.loserId,
+        resultType: matches.resultType,
+        problemSlug: matches.problemSlug,
+        durationSeconds: matches.durationSeconds,
+      })
+      .from(eloHistory)
+      .innerJoin(matches, eq(eloHistory.matchId, matches.id))
+      .where(eq(eloHistory.userId, userId))
+      .orderBy(desc(eloHistory.createdAt))
+      .limit(50),
+    db
+      .select({
+        eloAfter: eloHistory.eloAfter,
+        delta: eloHistory.delta,
+        createdAt: eloHistory.createdAt,
+      })
+      .from(eloHistory)
+      .where(eq(eloHistory.userId, userId))
+      .orderBy(asc(eloHistory.createdAt)),
+    db
+      .select({ wins: count() })
+      .from(matches)
+      .where(eq(matches.winnerId, userId)),
+    db
+      .select({ losses: count() })
+      .from(matches)
+      .where(eq(matches.loserId, userId)),
+  ]);
 
   const total = eloRows.length;
   const draws = total - wins - losses;
@@ -146,15 +155,25 @@ const ProfilePage = async () => {
               >
                 {tier}
               </Badge>
+              {isOwnProfile && (
+                <Button asChild variant="outline" size="sm" className="ml-auto">
+                  <Link href="/settings">Edit Profile</Link>
+                </Button>
+              )}
             </Row>
             {profile.username && (
               <span className="text-sm text-muted-foreground">
                 {profile.name}
               </span>
             )}
-            <span className="text-sm font-semibold tabular-nums">
-              {profile.elo} ELO
-            </span>
+            <Row className="items-center gap-3">
+              <span className="text-sm font-semibold tabular-nums">
+                {profile.elo} ELO
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {profile.preferredLanguage}
+              </span>
+            </Row>
             {profile.bio && (
               <p className="text-sm text-muted-foreground">{profile.bio}</p>
             )}
