@@ -333,11 +333,8 @@ ${paramLines}
 export const buildDriverCode = (
   userCode: string,
   language: Language,
-  meta: ProblemMeta | null,
+  meta: ProblemMeta,
 ): string => {
-  if (!meta || meta.manual) {
-    return userCode;
-  }
   switch (language) {
     case "javascript":
       return buildJS(userCode, meta, false);

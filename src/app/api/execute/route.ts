@@ -20,9 +20,11 @@ export const POST = async (request: Request) => {
     where: eq(problems.slug, problemSlug as string),
     columns: { metaData: true },
   });
-  const metaData = (problem?.metaData as ProblemMeta | null) ?? null;
+  if (!problem) {
+    return NextResponse.json({ error: "Problem not found" }, { status: 404 });
+  }
 
-  const wrappedCode = buildDriverCode(code, language, metaData);
+  const wrappedCode = buildDriverCode(code, language, problem.metaData as ProblemMeta);
 
   try {
     const { data } = await axios.post(
