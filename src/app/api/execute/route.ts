@@ -4,9 +4,21 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { buildDriverCode, type ProblemMeta } from "@/lib/driver";
 import { PISTON_LANG } from "@/lib/consts";
+import { rateLimit } from "@/lib/rate-limit";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import axios from "axios";
 
 export const POST = async (request: Request) => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!rateLimit(`execute:${session.user.id}`, 5, 15_000)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { code, language, stdin, problemSlug } = await request.json();
 
   const lang = PISTON_LANG[language as string];
