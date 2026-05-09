@@ -3,6 +3,7 @@
 import { createRoom, joinRoom } from "@/app/actions/rooms";
 import { type Difficulty } from "@/lib/consts";
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -16,6 +17,11 @@ export const useRoomActions = () => {
 
   const { mutate: handleCreate, isPending: creating } = useMutation({
     mutationFn: () => createRoom(difficulty, timeLimit),
+    onError: (err) => {
+      if (err.message.includes("Too many rooms")) {
+        toast({ title: "Slow down", description: "Too many rooms created recently", variant: "destructive" });
+      }
+    },
   });
 
   const { mutate: handleJoin, isPending: joining, error: joinError, reset: resetJoin } = useMutation({

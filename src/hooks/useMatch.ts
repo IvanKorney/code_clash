@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import axios from "axios";
 import type { Language, MatchResult, PanelOutput, SubmitOutput, TestCase } from "@/types/problem";
 
@@ -52,6 +53,11 @@ export const useMatch = ({ roomId, problemSlug, firstExample }: UseMatchProps) =
         exitCode: data.exitCode,
       });
     },
+    onError: (err) => {
+      if (axios.isAxiosError(err) && err.response?.status === 429) {
+        toast({ title: "Slow down", description: "Running too fast", variant: "destructive" });
+      }
+    },
   });
 
   const { mutate: submit, isPending: isSubmitting } = useMutation({
@@ -68,6 +74,11 @@ export const useMatch = ({ roomId, problemSlug, firstExample }: UseMatchProps) =
       setOutput({ type: "submit", ...data });
       if (data.allPassed) {
         setMatchResult("won");
+      }
+    },
+    onError: (err) => {
+      if (axios.isAxiosError(err) && err.response?.status === 429) {
+        toast({ title: "Slow down", description: "Submitting too fast", variant: "destructive" });
       }
     },
   });
