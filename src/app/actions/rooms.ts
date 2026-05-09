@@ -1,7 +1,14 @@
 "use server";
 
 import { db } from "@/db/db";
-import { rooms, roomPlayers, user, problems, matches, eloHistory } from "@/db/schema";
+import {
+  rooms,
+  roomPlayers,
+  user,
+  problems,
+  matches,
+  eloHistory,
+} from "@/db/schema";
 import { type Difficulty } from "@/lib/consts";
 import { auth } from "@/lib/auth";
 import { eq, and, ne } from "drizzle-orm";
@@ -27,7 +34,10 @@ const getUniqueCode = async (): Promise<string> => {
   return existing ? getUniqueCode() : code;
 };
 
-export const createRoom = async (difficulty: Difficulty, timeLimitMinutes: number) => {
+export const createRoom = async (
+  difficulty: Difficulty,
+  timeLimitMinutes: number,
+) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
@@ -74,14 +84,21 @@ export const addPlayerToRoom = async (
 
   if (players.length >= 2) {
     const problemPool = await db.query.problems.findMany({
-      where: and(eq(problems.difficulty, room.difficulty), eq(problems.isActive, true)),
+      where: and(
+        eq(problems.difficulty, room.difficulty),
+        eq(problems.isActive, true),
+      ),
       columns: { slug: true },
     });
     const picked = problemPool[Math.floor(Math.random() * problemPool.length)];
 
     await db
       .update(rooms)
-      .set({ status: "in_progress", matchStartedAt: new Date(), problemSlug: picked?.slug ?? null })
+      .set({
+        status: "in_progress",
+        matchStartedAt: new Date(),
+        problemSlug: picked?.slug ?? null,
+      })
       .where(eq(rooms.id, roomId));
     broadcastToWaitingRoom(roomId, "match_started").catch(console.error);
     return "in_progress";
@@ -97,15 +114,29 @@ export const forfeitMatch = async (roomId: string) => {
   await db
     .update(roomPlayers)
     .set({ finishedAt: new Date() })
-    .where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, session.user.id)));
+    .where(
+      and(
+        eq(roomPlayers.roomId, roomId),
+        eq(roomPlayers.userId, session.user.id),
+      ),
+    );
 
   await db
     .update(roomPlayers)
     .set({ hasPassed: true })
-    .where(and(eq(roomPlayers.roomId, roomId), ne(roomPlayers.userId, session.user.id)));
+    .where(
+      and(
+        eq(roomPlayers.roomId, roomId),
+        ne(roomPlayers.userId, session.user.id),
+      ),
+    );
 
-  broadcastToRoom(roomId, "forfeit", { forfeitingUserId: session.user.id }).catch((e) => console.error("broadcast failed", e));
-  resolveMatch(roomId, "forfeit").catch((e) => console.error("resolve failed", e));
+  broadcastToRoom(roomId, "forfeit", {
+    forfeitingUserId: session.user.id,
+  }).catch((e) => console.error("broadcast failed", e));
+  resolveMatch(roomId, "forfeit").catch((e) =>
+    console.error("resolve failed", e),
+  );
 };
 
 export const resolveMatchOnTimeout = async (roomId: string) => {
@@ -120,7 +151,10 @@ export const resolveMatchOnTimeout = async (roomId: string) => {
   if (!match) return null;
 
   const myHistory = await db.query.eloHistory.findFirst({
-    where: and(eq(eloHistory.matchId, match.id), eq(eloHistory.userId, session.user.id)),
+    where: and(
+      eq(eloHistory.matchId, match.id),
+      eq(eloHistory.userId, session.user.id),
+    ),
   });
 
   return {
@@ -130,7 +164,6 @@ export const resolveMatchOnTimeout = async (roomId: string) => {
     myEloAfter: myHistory?.eloAfter ?? 0,
   };
 };
-
 
 export const leaveRoom = async (roomId: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -175,4 +208,27 @@ export const joinRoom = async (code: string) => {
   if (existing) return { error: "You're already in this room" };
 
   return { url: `/room/${code.toUpperCase()}` };
+};
+
+export const createRematch = async (roomId: string): Promise<string | null> => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const room = await db.query.rooms.findFirst({ where: eq(rooms.id, roomId) });
+
+  if (!session || !room) {
+    return null;
+  }
+
+  const code = await getUniqueCode();
+  await db.insert(rooms).values({
+    id: crypto.randomUUID(),
+    code,
+    hostId: session.user.id,
+    difficulty: room.difficulty,
+    timeLimitMinutes: room.timeLimitMinutes,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 Day,
+  });
+  broadcastToWaitingRoom(roomId, "rematch_created", { code }).catch(
+    console.error,
+  );
+  return code;
 };

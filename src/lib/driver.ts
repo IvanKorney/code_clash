@@ -139,8 +139,10 @@ const jsOutputLine = (type: string, callExpr: string): string => {
   const t = type.toLowerCase();
   if (t === "void") return `${callExpr};`;
   if (t === "boolean") return `console.log(${callExpr} ? "true" : "false");`;
-  if (t === "listnode") return `console.log(JSON.stringify(_listToArr(${callExpr})));`;
-  if (t === "treenode") return `console.log(JSON.stringify(_treeToArr(${callExpr})));`;
+  if (t === "listnode")
+    return `console.log(JSON.stringify(_listToArr(${callExpr})));`;
+  if (t === "treenode")
+    return `console.log(JSON.stringify(_treeToArr(${callExpr})));`;
   return `console.log(JSON.stringify(${callExpr}));`;
 };
 
@@ -160,22 +162,30 @@ const pyOutputLine = (type: string, callExpr: string): string => {
   if (/^(integer|int|long)$/.test(t)) return `print(${callExpr})`;
   if (/^(double|float)$/.test(t)) return `print(${callExpr})`;
   if (t === "boolean") return `print("true" if ${callExpr} else "false")`;
-  if (t === "listnode") return `print(json.dumps(_list_to_arr(${callExpr}), separators=(',', ':')))`;
-  if (t === "treenode") return `print(json.dumps(_tree_to_arr(${callExpr}), separators=(',', ':')))`;
+  if (t === "listnode")
+    return `print(json.dumps(_list_to_arr(${callExpr}), separators=(',', ':')))`;
+  if (t === "treenode")
+    return `print(json.dumps(_tree_to_arr(${callExpr}), separators=(',', ':')))`;
   return `print(json.dumps(${callExpr}, separators=(',', ':')))`;
 };
 
 const javaParseLines = (type: string, idx: number): string => {
   const t = type.toLowerCase();
   const line = `_br.readLine().trim()`;
-  if (/^(integer|int)$/.test(t)) return `int _p${idx} = Integer.parseInt(${line});`;
+  if (/^(integer|int)$/.test(t))
+    return `int _p${idx} = Integer.parseInt(${line});`;
   if (/^long$/.test(t)) return `long _p${idx} = Long.parseLong(${line});`;
-  if (/^(double|float)$/.test(t)) return `double _p${idx} = Double.parseDouble(${line});`;
-  if (/^boolean$/.test(t)) return `boolean _p${idx} = Boolean.parseBoolean(${line});`;
+  if (/^(double|float)$/.test(t))
+    return `double _p${idx} = Double.parseDouble(${line});`;
+  if (/^boolean$/.test(t))
+    return `boolean _p${idx} = Boolean.parseBoolean(${line});`;
   if (/^string$/.test(t)) return `String _p${idx} = ${line};`;
-  if (/^(integer\[\]|int\[\])$/.test(t)) return `int[] _p${idx} = _parseIntArr(${line});`;
-  if (/^list<integer>$/.test(t)) return `List<Integer> _p${idx} = _parseIntList(${line});`;
-  if (/^string\[\]$/.test(t)) return `String[] _p${idx} = _parseStrArr(${line});`;
+  if (/^(integer\[\]|int\[\])$/.test(t))
+    return `int[] _p${idx} = _parseIntArr(${line});`;
+  if (/^list<integer>$/.test(t))
+    return `List<Integer> _p${idx} = _parseIntList(${line});`;
+  if (/^string\[\]$/.test(t))
+    return `String[] _p${idx} = _parseStrArr(${line});`;
   return `String _p${idx} = ${line}; // unsupported: ${type}`;
 };
 
@@ -183,40 +193,60 @@ const javaOutputLine = (type: string, callExpr: string): string => {
   const t = type.toLowerCase();
   if (t === "void") return `${callExpr};`;
   if (/^boolean$/.test(t)) return `System.out.println(_fmt(${callExpr}));`;
-  if (/^(integer\[\]|int\[\])$/.test(t)) return `System.out.println(_fmt(${callExpr}));`;
-  if (/^list<integer>$/.test(t)) return `System.out.println(_fmt(${callExpr}));`;
+  if (/^(integer\[\]|int\[\])$/.test(t))
+    return `System.out.println(_fmt(${callExpr}));`;
+  if (/^list<integer>$/.test(t))
+    return `System.out.println(_fmt(${callExpr}));`;
   return `System.out.println(${callExpr});`;
 };
 
 const cppReadLines = (type: string, idx: number): string => {
   const t = type.toLowerCase();
   const readLine = `string _l${idx}; getline(cin, _l${idx});`;
-  if (/^(integer|int)$/.test(t)) return `${readLine}\n    int _p${idx} = stoi(_l${idx});`;
-  if (/^long$/.test(t)) return `${readLine}\n    long long _p${idx} = stoll(_l${idx});`;
-  if (/^(double|float)$/.test(t)) return `${readLine}\n    double _p${idx} = stod(_l${idx});`;
-  if (/^boolean$/.test(t)) return `${readLine}\n    bool _p${idx} = (_l${idx} == "true");`;
+  if (/^(integer|int)$/.test(t))
+    return `${readLine}\n    int _p${idx} = stoi(_l${idx});`;
+  if (/^long$/.test(t))
+    return `${readLine}\n    long long _p${idx} = stoll(_l${idx});`;
+  if (/^(double|float)$/.test(t))
+    return `${readLine}\n    double _p${idx} = stod(_l${idx});`;
+  if (/^boolean$/.test(t))
+    return `${readLine}\n    bool _p${idx} = (_l${idx} == "true");`;
   if (/^string$/.test(t)) return `${readLine}\n    string _p${idx} = _l${idx};`;
-  if (/^(integer\[\]|int\[\]|vector<int>)$/.test(t)) return `${readLine}\n    vector<int> _p${idx} = _parseIntVec(_l${idx});`;
-  if (/^(integer\[\]\[\]|int\[\]\[\]|vector<vector<int>>)$/.test(t)) return `${readLine}\n    vector<vector<int>> _p${idx} = _parseInt2D(_l${idx});`;
+  if (/^(integer\[\]|int\[\]|vector<int>)$/.test(t))
+    return `${readLine}\n    vector<int> _p${idx} = _parseIntVec(_l${idx});`;
+  if (/^(integer\[\]\[\]|int\[\]\[\]|vector<vector<int>>)$/.test(t))
+    return `${readLine}\n    vector<vector<int>> _p${idx} = _parseInt2D(_l${idx});`;
   return `${readLine}\n    // unsupported: ${type}`;
 };
 
 const cppOutputLine = (type: string, callExpr: string): string => {
   const t = type.toLowerCase();
   if (t === "void") return `${callExpr};`;
-  if (/^boolean$/.test(t)) return `cout << (${callExpr} ? "true" : "false") << endl;`;
+  if (/^boolean$/.test(t))
+    return `cout << (${callExpr} ? "true" : "false") << endl;`;
   if (/^string$/.test(t)) return `cout << ${callExpr} << endl;`;
-  if (/^(integer\[\]|int\[\]|vector<int>)$/.test(t)) return `cout << _fmtVec(${callExpr}) << endl;`;
-  if (/^(integer\[\]\[\]|vector<vector<int>>)$/.test(t)) return `{ auto _r=${callExpr}; string _s="["; for(size_t _i=0;_i<_r.size();_i++){if(_i)_s+=",";_s+=_fmtVec(_r[_i]);} cout<<_s+"]"<<endl; }`;
+  if (/^(integer\[\]|int\[\]|vector<int>)$/.test(t))
+    return `cout << _fmtVec(${callExpr}) << endl;`;
+  if (/^(integer\[\]\[\]|vector<vector<int>>)$/.test(t))
+    return `{ auto _r=${callExpr}; string _s="["; for(size_t _i=0;_i<_r.size();_i++){if(_i)_s+=",";_s+=_fmtVec(_r[_i]);} cout<<_s+"]"<<endl; }`;
   return `cout << ${callExpr} << endl;`;
 };
 
 // ─── Builders ─────────────────────────────────────────────────────────────────
 
-const buildJS = (userCode: string, meta: ProblemMeta, isTS: boolean): string => {
-  const code = uncommentDefinitions(userCode, isTS ? "typescript" : "javascript");
+const buildJS = (
+  userCode: string,
+  meta: ProblemMeta,
+  isTS: boolean,
+): string => {
+  const code = uncommentDefinitions(
+    userCode,
+    isTS ? "typescript" : "javascript",
+  );
   const utils = isTS ? TS_UTILS : JS_UTILS;
-  const paramLines = meta.params.map((p, i) => `const _p${i} = ${jsParseExpr(p.type)};`).join("\n");
+  const paramLines = meta.params
+    .map((p, i) => `const _p${i} = ${jsParseExpr(p.type)};`)
+    .join("\n");
   const args = meta.params.map((_, i) => `_p${i}`).join(", ");
   const header = isTS ? "// @ts-nocheck\n" : "";
   return `${header}${code}
@@ -232,7 +262,9 @@ ${jsOutputLine(meta.return.type, `${meta.name}(${args})`)}`;
 
 const buildPython = (userCode: string, meta: ProblemMeta): string => {
   const code = uncommentDefinitions(userCode, "python");
-  const paramLines = meta.params.map((p, i) => `_p${i} = ${pyParseExpr(p.type)}`).join("\n");
+  const paramLines = meta.params
+    .map((p, i) => `_p${i} = ${pyParseExpr(p.type)}`)
+    .join("\n");
   const args = meta.params.map((_, i) => `_p${i}`).join(", ");
   return `import sys, json
 from typing import Optional, List, Dict, Set, Tuple, Any, Union
@@ -253,7 +285,9 @@ ${pyOutputLine(meta.return.type, `Solution().${meta.name}(${args})`)}`;
 
 const buildJava = (userCode: string, meta: ProblemMeta): string => {
   const code = uncommentDefinitions(userCode, "java");
-  const paramLines = meta.params.map((p, i) => `        ${javaParseLines(p.type, i)}`).join("\n");
+  const paramLines = meta.params
+    .map((p, i) => `        ${javaParseLines(p.type, i)}`)
+    .join("\n");
   const args = meta.params.map((_, i) => `_p${i}`).join(", ");
   return `import java.util.*;
 import java.io.*;
@@ -273,7 +307,9 @@ ${paramLines}
 
 const buildCpp = (userCode: string, meta: ProblemMeta): string => {
   const code = uncommentDefinitions(userCode, "cpp");
-  const paramLines = meta.params.map((p, i) => `    ${cppReadLines(p.type, i)}`).join("\n");
+  const paramLines = meta.params
+    .map((p, i) => `    ${cppReadLines(p.type, i)}`)
+    .join("\n");
   const args = meta.params.map((_, i) => `_p${i}`).join(", ");
   return `#include <bits/stdc++.h>
 using namespace std;
@@ -299,12 +335,19 @@ export const buildDriverCode = (
   language: Language,
   meta: ProblemMeta | null,
 ): string => {
-  if (!meta || meta.manual) return userCode;
+  if (!meta || meta.manual) {
+    return userCode;
+  }
   switch (language) {
-    case "javascript": return buildJS(userCode, meta, false);
-    case "typescript": return buildJS(userCode, meta, true);
-    case "python": return buildPython(userCode, meta);
-    case "java": return buildJava(userCode, meta);
-    case "cpp": return buildCpp(userCode, meta);
+    case "javascript":
+      return buildJS(userCode, meta, false);
+    case "typescript":
+      return buildJS(userCode, meta, true);
+    case "python":
+      return buildPython(userCode, meta);
+    case "java":
+      return buildJava(userCode, meta);
+    case "cpp":
+      return buildCpp(userCode, meta);
   }
 };

@@ -94,6 +94,7 @@ export const POST = async (request: Request) => {
     .set({
       testCasesPassed: passed,
       totalTestCases: testCases.length,
+      language: language,
       ...(allPassed
         ? { hasPassed: true, finishedAt: new Date(), solution: code }
         : {}),
