@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { db } from "@/db/db";
 import { roomPlayers, problems } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -47,6 +48,10 @@ export const POST = async (request: Request) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!rateLimit(`submit:${session.user.id}`, 5, 15_000)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const { code, language, roomId, problemSlug } = await request.json();

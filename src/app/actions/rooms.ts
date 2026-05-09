@@ -14,6 +14,7 @@ import { auth } from "@/lib/auth";
 import { eq, and, ne } from "drizzle-orm";
 import { broadcastToRoom, broadcastToWaitingRoom } from "@/lib/supabase-server";
 import { resolveMatch } from "@/lib/resolve";
+import { rateLimit } from "@/lib/rate-limit";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -40,6 +41,10 @@ export const createRoom = async (
 ) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
+
+  if (!rateLimit(`create-room:${session.user.id}`, 5, 30 * 60_000)) {
+    throw new Error("Too many rooms created. Please wait before creating another.");
+  }
 
   const code = await getUniqueCode();
 
