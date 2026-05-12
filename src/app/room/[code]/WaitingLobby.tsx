@@ -17,6 +17,7 @@ interface WaitingLobbyProps {
   roomId: string;
   difficulty: Difficulty;
   currentUserId: string;
+  isHost: boolean;
 }
 
 const DIFFICULTY_STYLES: Record<Difficulty, string> = {
@@ -30,9 +31,10 @@ export const WaitingLobby = ({
   roomId,
   difficulty,
   currentUserId,
+  isHost,
 }: WaitingLobbyProps) => {
   const [copied, setCopied] = useState(false);
-  const data = useWaitingRoom(code, roomId);
+  const data = useWaitingRoom(code, roomId, isHost);
 
   const { mutate: handleLeave, isPending: leaving } = useMutation({
     mutationFn: async () => leaveRoom(roomId),

@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { posthog } from "@/lib/posthog";
 import axios from "axios";
 import type { Language, MatchResult, PanelOutput, SubmitOutput, TestCase } from "@/types/problem";
 
@@ -71,9 +72,11 @@ export const useMatch = ({ roomId, problemSlug, firstExample }: UseMatchProps) =
       return data as Omit<SubmitOutput, "type">;
     },
     onSuccess: (data) => {
+      posthog.capture("code_submitted", { all_passed: data.allPassed, passed: data.passed, total: data.total });
       setOutput({ type: "submit", ...data });
       if (data.allPassed) {
         setMatchResult("won");
+        posthog.capture("match_finished", { result: "won" });
       }
     },
     onError: (err) => {
@@ -86,6 +89,7 @@ export const useMatch = ({ roomId, problemSlug, firstExample }: UseMatchProps) =
   const handleOpponentFinished = useCallback(() => {
     if (matchResult === null) {
       setMatchResult("lost");
+      posthog.capture("match_finished", { result: "lost" });
     }
   }, [matchResult]);
 

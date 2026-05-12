@@ -1,6 +1,7 @@
 "use client";
 
 import { forfeitMatch, resolveMatchOnTimeout } from "@/app/actions/rooms";
+import { posthog } from "@/lib/posthog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -55,7 +56,10 @@ export const MatchHeader = ({
 
   const { mutate: handleGiveUp, isPending: givingUp } = useMutation({
     mutationFn: async () => forfeitMatch(roomId),
-    onSuccess: () => onForfeit(),
+    onSuccess: () => {
+      posthog.capture("forfeit");
+      onForfeit();
+    },
   });
 
   useOnce(!!opponent?.hasPassed, onOpponentFinished);

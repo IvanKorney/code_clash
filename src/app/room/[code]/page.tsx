@@ -44,6 +44,7 @@ const RoomPage = async ({ params }: { params: Promise<{ code: string }> }) => {
         roomId={room.id}
         difficulty={room.difficulty}
         currentUserId={session.user.id}
+        isHost={room.hostId === session.user.id}
       />
     );
   }
