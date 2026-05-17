@@ -4,6 +4,7 @@ import { createRoom, joinRoom } from "@/app/actions/rooms";
 import { type Difficulty } from "@/lib/consts";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { posthog } from "@/lib/posthog";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -30,7 +31,10 @@ export const useRoomActions = () => {
       if (result.error) throw new Error(result.error);
       return result.url;
     },
-    onSuccess: (url) => { if (url) router.push(url); },
+    onSuccess: (url) => {
+      posthog.capture("room_joined");
+      if (url) router.push(url);
+    },
   });
 
   const handleCodeChange = (value: string) => {
