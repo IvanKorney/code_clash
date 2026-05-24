@@ -50,7 +50,7 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!rateLimit(`submit:${session.user.id}`, 5, 15_000)) {
+  if (!await rateLimit(`submit:${session.user.id}`, 5, 15_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
