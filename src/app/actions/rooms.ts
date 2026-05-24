@@ -42,7 +42,7 @@ export const createRoom = async (
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
-  if (!rateLimit(`create-room:${session.user.id}`, 5, 30 * 60_000)) {
+  if (!await rateLimit(`create-room:${session.user.id}`, 5, 30 * 60_000)) {
     throw new Error("Too many rooms created. Please wait before creating another.");
   }
 
