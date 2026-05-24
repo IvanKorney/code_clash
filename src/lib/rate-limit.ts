@@ -1,7 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-// ─── In-memory fallback (local dev, no Redis env vars set) ───────────────────
 type MemEntry = { count: number; resetAt: number };
 const memStore = new Map<string, MemEntry>();
 
@@ -17,7 +16,6 @@ const inMemoryLimit = (key: string, limit: number, windowMs: number): boolean =>
   return true;
 };
 
-// ─── Redis-backed rate limiting (production) ─────────────────────────────────
 type Window = `${number} ms` | `${number} s` | `${number} m`;
 
 const msToWindow = (ms: number): Window => {
@@ -26,7 +24,6 @@ const msToWindow = (ms: number): Window => {
   return `${ms} ms`;
 };
 
-// Cached limiter instances keyed by "limit:windowMs"
 const redisLimiters = new Map<string, Ratelimit>();
 
 const getRedisLimiter = (limit: number, windowMs: number): Ratelimit => {
@@ -44,14 +41,12 @@ const getRedisLimiter = (limit: number, windowMs: number): Ratelimit => {
   return redisLimiters.get(cacheKey)!;
 };
 
-// ─── Public API ───────────────────────────────────────────────────────────────
 export const rateLimit = async (
   key: string,
   limit: number,
   windowMs: number,
 ): Promise<boolean> => {
   if (!process.env.UPSTASH_REDIS_REST_URL) {
-    // No Redis configured — fall back to in-memory (dev only)
     return inMemoryLimit(key, limit, windowMs);
   }
   const { success } = await getRedisLimiter(limit, windowMs).limit(key);
