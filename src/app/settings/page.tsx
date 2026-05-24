@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -56,37 +56,31 @@ const Field = ({
   </Column>
 );
 
-const SettingsPage = () => {
-  const { data: session } = authClient.useSession();
+interface SettingsFormProps {
+  userData: UserData;
+  userId: string;
+  displayName: string;
+  userEmail: string;
+  initials: string;
+}
+
+const SettingsForm = ({ userData, userId, displayName, userEmail, initials }: SettingsFormProps) => {
   const queryClient = useQueryClient();
 
-  const { data: userData, isLoading } = useQuery({
-    queryKey: ["user", session?.user?.id],
-    queryFn: async () => {
-      const { data } = await axios.get<{ user: UserData }>(
-        `/api/user/${session!.user.id}`,
-      );
-      return data.user;
-    },
-    enabled: !!session?.user?.id,
+  // State is initialized directly from userData — no useEffect needed.
+  // The parent only renders this component once userData is available, so
+  // the initializer always runs with real data.
+  const [form, setForm] = useState({
+    username: userData.username ?? "",
+    bio: userData.bio ?? "",
+    language: (userData.preferredLanguage as Language) ?? "javascript",
+    linkedin: userData.linkedin ?? "",
+    twitter: userData.twitter ?? "",
+    instagram: userData.instagram ?? "",
   });
 
-  const [username, setUsername] = useState("");
-  const [bio, setBio] = useState("");
-  const [language, setLanguage] = useState<Language>("javascript");
-  const [linkedin, setLinkedin] = useState("");
-  const [twitter, setTwitter] = useState("");
-  const [instagram, setInstagram] = useState("");
-
-  useEffect(() => {
-    if (!userData) return;
-    setUsername(userData.username ?? "");
-    setBio(userData.bio ?? "");
-    setLanguage((userData.preferredLanguage as Language) ?? "javascript");
-    setLinkedin(userData.linkedin ?? "");
-    setTwitter(userData.twitter ?? "");
-    setInstagram(userData.instagram ?? "");
-  }, [userData]);
+  const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
 
   const isValidUrl = (val: string) => {
     if (!val) return true;
@@ -98,37 +92,27 @@ const SettingsPage = () => {
   };
 
   const urlErrors = {
-    linkedin: linkedin && !isValidUrl(linkedin),
-    twitter: twitter && !isValidUrl(twitter),
-    instagram: instagram && !isValidUrl(instagram),
+    linkedin: !!form.linkedin && !isValidUrl(form.linkedin),
+    twitter: !!form.twitter && !isValidUrl(form.twitter),
+    instagram: !!form.instagram && !isValidUrl(form.instagram),
   };
   const hasUrlErrors = Object.values(urlErrors).some(Boolean);
 
   const { mutate: save, isPending, isSuccess } = useMutation({
     mutationFn: async () => {
-      await axios.patch(`/api/user/${session!.user.id}`, {
-        username,
-        bio,
-        preferredLanguage: language,
-        linkedin,
-        twitter,
-        instagram,
+      await axios.patch(`/api/user/${userId}`, {
+        username: form.username,
+        bio: form.bio,
+        preferredLanguage: form.language,
+        linkedin: form.linkedin,
+        twitter: form.twitter,
+        instagram: form.instagram,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["user", userId] });
     },
   });
-
-  if (!session || isLoading) return null;
-
-  const displayName = userData?.username ?? userData?.name ?? session.user.name;
-  const initials = (userData?.name ?? session.user.name)
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() ?? "?";
 
   return (
     <main className="flex flex-1 justify-center py-10 px-4">
@@ -143,16 +127,14 @@ const SettingsPage = () => {
         {/* Avatar */}
         <Row className="items-center gap-4">
           <Avatar className="h-16 w-16">
-            {userData?.image && (
+            {userData.image && (
               <AvatarImage src={userData.image} alt={displayName} />
             )}
             <AvatarFallback className="text-xl">{initials}</AvatarFallback>
           </Avatar>
           <Column className="gap-0.5">
             <span className="text-sm font-medium">{displayName}</span>
-            <span className="text-xs text-muted-foreground">
-              {session.user.email}
-            </span>
+            <span className="text-xs text-muted-foreground">{userEmail}</span>
           </Column>
         </Row>
 
@@ -163,24 +145,24 @@ const SettingsPage = () => {
 
           <Field label="Username" hint="Your unique handle on Code Clash">
             <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={form.username}
+              onChange={(e) => set("username", e.target.value)}
               maxLength={32}
             />
           </Field>
 
           <Field label="Bio">
             <Input
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
+              value={form.bio}
+              onChange={(e) => set("bio", e.target.value)}
               maxLength={160}
             />
           </Field>
 
           <Field label="Preferred Language">
             <Select
-              value={language}
-              onValueChange={(v) => setLanguage(v as Language)}
+              value={form.language}
+              onValueChange={(v) => set("language", v as Language)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -203,24 +185,24 @@ const SettingsPage = () => {
 
           <Field label="LinkedIn" hint={urlErrors.linkedin ? "Must be a valid https:// URL" : undefined} error={urlErrors.linkedin}>
             <Input
-              value={linkedin}
-              onChange={(e) => setLinkedin(e.target.value)}
+              value={form.linkedin}
+              onChange={(e) => set("linkedin", e.target.value)}
               className={urlErrors.linkedin ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
 
           <Field label="X / Twitter" hint={urlErrors.twitter ? "Must be a valid https:// URL" : undefined} error={urlErrors.twitter}>
             <Input
-              value={twitter}
-              onChange={(e) => setTwitter(e.target.value)}
+              value={form.twitter}
+              onChange={(e) => set("twitter", e.target.value)}
               className={urlErrors.twitter ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
 
           <Field label="Instagram" hint={urlErrors.instagram ? "Must be a valid https:// URL" : undefined} error={urlErrors.instagram}>
             <Input
-              value={instagram}
-              onChange={(e) => setInstagram(e.target.value)}
+              value={form.instagram}
+              onChange={(e) => set("instagram", e.target.value)}
               className={urlErrors.instagram ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
@@ -236,6 +218,42 @@ const SettingsPage = () => {
         </Row>
       </Column>
     </main>
+  );
+};
+
+const SettingsPage = () => {
+  const { data: session } = authClient.useSession();
+
+  const { data: userData, isLoading } = useQuery({
+    queryKey: ["user", session?.user?.id],
+    queryFn: async () => {
+      const { data } = await axios.get<{ user: UserData }>(
+        `/api/user/${session!.user.id}`,
+      );
+      return data.user;
+    },
+    enabled: !!session?.user?.id,
+  });
+
+  if (!session || isLoading || !userData) return null;
+
+  const displayName = userData.username ?? userData.name ?? session.user.name;
+  const initials =
+    (userData.name ?? session.user.name)
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() ?? "?";
+
+  return (
+    <SettingsForm
+      userData={userData}
+      userId={session.user.id}
+      displayName={displayName}
+      userEmail={session.user.email}
+      initials={initials}
+    />
   );
 };
 
