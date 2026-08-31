@@ -104,10 +104,12 @@ const SolutionPanel = ({
             value={player.solution}
             theme={theme === "dark" ? "vs-dark" : "vs-light"}
             options={{
+              automaticLayout: true,
               readOnly: true,
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
               fontSize: 13,
+              fontFamily: "var(--font-jetbrains-mono), monospace",
               lineNumbers: "off",
               folding: false,
               contextmenu: false,

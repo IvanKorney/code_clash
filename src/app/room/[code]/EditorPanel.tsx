@@ -143,7 +143,7 @@ export const EditorPanel = ({
           </Button>
         </Row>
       </Row>
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 w-full">
         <MonacoEditor
           height="100%"
           language={monacoLang}
@@ -152,7 +152,9 @@ export const EditorPanel = ({
           onMount={handleMount}
           theme={theme === "dark" ? "vs-dark" : "vs-light"}
           options={{
+            automaticLayout: true,
             fontSize: 14,
+            fontFamily: "var(--font-jetbrains-mono), monospace",
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
             padding: { top: 12 },
