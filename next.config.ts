@@ -15,7 +15,7 @@ const csp = [
   `style-src 'self' 'unsafe-inline'`,
   `font-src 'self' https://fonts.gstatic.com`,
   `img-src 'self' data: https:`,
-  `connect-src 'self' ${posthogHost} https://${supabaseHostname} wss://${supabaseHostname}`,
+  `connect-src 'self' https://*.posthog.com ${posthogHost} https://${supabaseHostname} wss://${supabaseHostname}`,
   `frame-src 'none'`,
   `frame-ancestors 'none'`,
   `object-src 'none'`,
